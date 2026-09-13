@@ -5,7 +5,8 @@ import {
   SESSION_COOKIE,
   sessionCookieOptions,
 } from "@/lib/session";
-import { fetchPlayerSummary } from "@/lib/steam-api";
+import { upsertUser } from "@/lib/db/users";
+import { fetchPlayerSummary, fetchPlaytime } from "@/lib/steam-api";
 import { verifySteamOpenId } from "@/lib/steam-openid";
 
 export async function GET(request: Request) {
@@ -17,7 +18,19 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/?error=steam", appUrl));
   }
 
-  const user = await fetchPlayerSummary(steamId);
+  const [user, playtime] = await Promise.all([
+    fetchPlayerSummary(steamId),
+    fetchPlaytime(steamId),
+  ]);
+
+  await upsertUser({
+    id: user.steamId,
+    name: user.displayName,
+    avatarUrl: user.avatarUrl,
+    playtimeMinutes: playtime.minutes,
+    playtimePublic: playtime.isPublic,
+  });
+
   const response = NextResponse.redirect(new URL("/", appUrl));
   response.cookies.set(
     SESSION_COOKIE,
