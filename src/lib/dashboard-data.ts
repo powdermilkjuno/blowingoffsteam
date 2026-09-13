@@ -57,7 +57,14 @@ export async function loadDashboard(profile: Profile): Promise<DashboardData> {
     });
   }
 
-  const periods = await getPlaytimePeriods(profile.id);
+  const twoWeeks = games.reduce(
+    (sum, game) => sum + game.playtimeTwoWeeksMinutes,
+    0,
+  );
+  const periods = await getPlaytimePeriods(profile.id, new Date(), {
+    forever: steam?.playtimeMinutes,
+    twoWeeks,
+  });
 
   return { profile, steam, games, periods };
 }

@@ -39,6 +39,7 @@ export async function GET() {
     periods: {
       sampledFrom: periods.sampledFrom,
       snapshotCount: periods.snapshotCount,
+      twoWeeks: periods.twoWeeks,
       today: periods.today,
       week: periods.week,
       month: periods.month,
