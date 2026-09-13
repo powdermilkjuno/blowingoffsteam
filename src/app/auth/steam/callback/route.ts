@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     avatarUrl: user.avatarUrl,
     playtimeMinutes: playtime.minutes,
     playtimePublic: playtime.isPublic,
+    games: playtime.games,
   });
 
   const response = NextResponse.redirect(new URL("/", appUrl));
