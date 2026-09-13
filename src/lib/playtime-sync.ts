@@ -1,6 +1,6 @@
 import { saveSteamPlaytime } from "./db/profiles";
 import { listLinkedSteamAccounts } from "./db/snapshots";
-import { fetchPlaytime } from "./steam-api";
+import { fetchPlaytime, type Playtime } from "./steam-api";
 
 export type SyncResult = {
   checked: number;
@@ -9,8 +9,21 @@ export type SyncResult = {
   failed: number;
 };
 
-// Pulls GetOwnedGames for every linked Steam account. The snapshot table
-// dedupes to one sample per UTC day; this is safe to run from cron and login.
+export async function syncLinkedPlaytime(account: {
+  profileId: string;
+  steamId: string;
+  profileUrl: string;
+}): Promise<Playtime> {
+  const playtime = await fetchPlaytime(account.steamId);
+  await saveSteamPlaytime({
+    profileId: account.profileId,
+    steamId: account.steamId,
+    profileUrl: account.profileUrl,
+    playtime,
+  });
+  return playtime;
+}
+
 export async function syncAllLinkedPlaytime(): Promise<SyncResult> {
   const accounts = await listLinkedSteamAccounts();
   const result: SyncResult = {
@@ -22,14 +35,7 @@ export async function syncAllLinkedPlaytime(): Promise<SyncResult> {
 
   for (const account of accounts) {
     try {
-      const playtime = await fetchPlaytime(account.steamId);
-      await saveSteamPlaytime({
-        profileId: account.profileId,
-        steamId: account.steamId,
-        profileUrl: account.profileUrl,
-        playtime,
-      });
-
+      const playtime = await syncLinkedPlaytime(account);
       if (playtime.isPublic) result.synced += 1;
       else result.privateProfiles += 1;
     } catch {

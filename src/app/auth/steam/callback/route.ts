@@ -4,9 +4,9 @@ import { auth } from "@/lib/auth/server";
 import {
   getProfileByAuthUserId,
   getProfileBySteamId,
-  saveSteamPlaytime,
 } from "@/lib/db/profiles";
-import { fetchPlayerSummary, fetchPlaytime } from "@/lib/steam-api";
+import { syncLinkedPlaytime } from "@/lib/playtime-sync";
+import { fetchPlayerSummary } from "@/lib/steam-api";
 import {
   encodeTicket,
   STEAM_TICKET_COOKIE,
@@ -53,12 +53,10 @@ export async function GET(request: Request) {
       );
     }
 
-    const playtime = await fetchPlaytime(steamId);
-    await saveSteamPlaytime({
+    await syncLinkedPlaytime({
       profileId: profile.id,
       steamId,
       profileUrl: summary.profileUrl,
-      playtime,
     });
 
     return NextResponse.redirect(new URL("/dashboard", appUrl));

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   pgTable,
@@ -81,6 +82,24 @@ export const playtimeSnapshots = pgTable(
       table.appId,
       table.capturedAt,
     ),
+  ],
+);
+
+// Minutes actually played on a UTC calendar day. Refresh and cron both add
+// Steam forever-deltas into today's row. Week/month are sums of these rows.
+export const playtimeDaily = pgTable(
+  "playtime_daily",
+  {
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    appId: integer("app_id").notNull(),
+    day: date("day", { mode: "string" }).notNull(),
+    minutes: integer("minutes").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.profileId, table.appId, table.day] }),
+    index("playtime_daily_profile_day_idx").on(table.profileId, table.day),
   ],
 );
 

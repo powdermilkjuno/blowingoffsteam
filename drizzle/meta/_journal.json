@@ -15,6 +15,13 @@
       "when": 1789290016279,
       "tag": "0001_playtime_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789293398870,
+      "tag": "0002_loving_red_ghost",
+      "breakpoints": true
     }
   ]
 }
