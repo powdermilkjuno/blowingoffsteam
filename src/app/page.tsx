@@ -23,6 +23,7 @@ export default async function Home({
         profileUrl: session?.profileUrl ?? "",
         playtimeMinutes: stored.playtimeMinutes,
         playtimePublic: stored.playtimePublic,
+        games: stored.games,
       }
     : session
       ? {
@@ -32,13 +33,14 @@ export default async function Home({
           profileUrl: session.profileUrl,
           playtimeMinutes: 0,
           playtimePublic: false,
+          games: [],
         }
       : null;
   const { error } = await searchParams;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center bg-[#1b2838] px-6 py-16 font-sans text-[#c7d5e0]">
-      <main className="flex w-full max-w-md flex-col items-center gap-8 text-center">
+      <main className="flex w-full max-w-lg flex-col items-center gap-8 text-center">
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-white">
             Blowing Off Steam
@@ -68,10 +70,44 @@ export default async function Home({
               <p className="font-mono text-xs text-[#8f98a0]">{user.steamId}</p>
               <p className="pt-2 text-sm text-[#c7d5e0]">
                 {user.playtimePublic
-                  ? `${formatPlaytime(user.playtimeMinutes)} played`
+                  ? `${formatPlaytime(user.playtimeMinutes)} played across ${user.games.length} games`
                   : "Playtime hidden — set Game details to Public on Steam"}
               </p>
             </div>
+            {user.playtimePublic && user.games.length > 0 ? (
+              <ul className="flex max-h-80 w-full flex-col gap-1 overflow-y-auto text-left">
+                {user.games.map((game) => (
+                  <li
+                    key={game.appId}
+                    className="flex items-center gap-3 rounded px-2 py-1.5"
+                  >
+                    {game.iconUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={game.iconUrl}
+                        alt=""
+                        width={32}
+                        height={32}
+                        className="size-8 rounded"
+                      />
+                    ) : (
+                      <span className="size-8 rounded bg-[#1b2838]" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-sm text-white">
+                      {game.name}
+                    </span>
+                    <span className="shrink-0 text-right text-xs text-[#8f98a0]">
+                      <span className="block text-[#c7d5e0]">
+                        {formatPlaytime(game.playtimeMinutes)}
+                      </span>
+                      {game.playtimeTwoWeeksMinutes > 0 ? (
+                        <span>{formatPlaytime(game.playtimeTwoWeeksMinutes)} / 2w</span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <div className="flex items-center gap-4 text-sm">
               {user.profileUrl ? (
                 <a

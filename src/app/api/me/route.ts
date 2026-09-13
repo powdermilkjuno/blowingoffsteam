@@ -19,5 +19,13 @@ export async function GET() {
     avatarUrl: user.avatarUrl,
     playtimeMinutes: user.playtimeMinutes,
     playtimePublic: user.playtimePublic,
+    games: user.games.map((game) => ({
+      appId: game.appId,
+      name: game.name,
+      playtimeMinutes: game.playtimeMinutes,
+      playtimeTwoWeeksMinutes: game.playtimeTwoWeeksMinutes,
+      lastPlayedAt: game.lastPlayedAt,
+      iconUrl: game.iconUrl,
+    })),
   });
 }
