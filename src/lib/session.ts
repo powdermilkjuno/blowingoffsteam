@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 
+//session security
 export const SESSION_COOKIE = "bos_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
