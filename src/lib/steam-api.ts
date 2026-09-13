@@ -1,9 +1,14 @@
-import type { SessionUser } from "./session";
+export type SteamPlayerSummary = {
+  steamId: string;
+  displayName: string;
+  avatarUrl: string;
+  profileUrl: string;
+};
 
 export async function fetchPlayerSummary(
   steamId: string,
-): Promise<SessionUser> {
-  const fallback: SessionUser = {
+): Promise<SteamPlayerSummary> {
+  const fallback: SteamPlayerSummary = {
     steamId,
     displayName: "Steam User",
     avatarUrl: "",

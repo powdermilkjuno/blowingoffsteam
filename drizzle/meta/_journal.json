@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1789186560428,
-      "tag": "0000_users",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1789274480072,
-      "tag": "0001_user_games",
+      "when": 1789284781695,
+      "tag": "0000_accounts_friends",
       "breakpoints": true
     }
   ]
