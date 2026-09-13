@@ -3,12 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
-import {
-  getProfileByAuthUserId,
-  getSteamLink,
-  saveSteamPlaytime,
-} from "@/lib/db/profiles";
-import { fetchPlaytime } from "@/lib/steam-api";
+import { getProfileByAuthUserId, getSteamLink } from "@/lib/db/profiles";
+import { syncLinkedPlaytime } from "@/lib/playtime-sync";
 
 const COOLDOWN_MS = 30_000;
 
@@ -34,12 +30,10 @@ export async function refreshPlaytimeAction(
   }
 
   try {
-    const playtime = await fetchPlaytime(steam.steamId);
-    await saveSteamPlaytime({
+    const playtime = await syncLinkedPlaytime({
       profileId: profile.id,
       steamId: steam.steamId,
       profileUrl: steam.profileUrl,
-      playtime,
     });
 
     revalidatePath("/dashboard");

@@ -50,6 +50,8 @@ export async function GET() {
       playtimeMinutes: game.playtimeMinutes,
       playtimeFormatted: formatPlaytime(game.playtimeMinutes),
       playtimeTwoWeeksMinutes: game.playtimeTwoWeeksMinutes,
+      todayMinutes: game.todayMinutes,
+      weekMinutes: game.weekMinutes,
       lastPlayedAt: game.lastPlayedAt,
       iconUrl: game.iconUrl,
     })),

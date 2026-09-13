@@ -2,69 +2,84 @@ import {
   getProfileGames,
   getSteamLink,
   isStale,
-  saveSteamPlaytime,
   type Profile,
   type SteamLink,
 } from "./db/profiles";
 import {
-  appendDailySnapshot,
   getPlaytimePeriods,
+  seedMissingDailyFromSteamWindow,
+  sumDailyMinutesByApp,
   type PlaytimePeriods,
-} from "./db/snapshots";
-import { fetchPlaytime, type GamePlaytime } from "./steam-api";
+} from "./db/daily";
+import { syncLinkedPlaytime } from "./playtime-sync";
+import { rollingWindowStart, utcDayString, PERIOD_DAYS } from "./playtime-windows";
+import type { GamePlaytime } from "./steam-api";
+
+export type DashboardGame = GamePlaytime & {
+  todayMinutes: number;
+  weekMinutes: number;
+};
 
 export type DashboardData = {
   profile: Profile;
   steam: SteamLink | null;
-  games: GamePlaytime[];
+  games: DashboardGame[];
   periods: PlaytimePeriods;
 };
 
-// Steam playtime is only refreshed on demand, so a stale link is re-pulled the
-// next time someone looks at the dashboard. That refresh also writes today's
-// snapshot if the cron has not already.
 export async function loadDashboard(profile: Profile): Promise<DashboardData> {
   let steam = await getSteamLink(profile.id);
 
   if (steam && isStale(steam.syncedAt)) {
     try {
-      const playtime = await fetchPlaytime(steam.steamId);
-      await saveSteamPlaytime({
+      await syncLinkedPlaytime({
         profileId: profile.id,
         steamId: steam.steamId,
         profileUrl: steam.profileUrl,
-        playtime,
       });
       steam = await getSteamLink(profile.id);
     } catch {
-      // Serve the last known snapshot if Steam is unreachable.
+      // Serve the last held totals if Steam is unreachable.
     }
   }
 
-  const games = steam ? await getProfileGames(profile.id) : [];
+  const now = new Date();
+  const today = utcDayString(now);
+  const library = steam ? await getProfileGames(profile.id) : [];
 
-  // Anyone who already has a library but no history yet gets day zero now,
-  // instead of waiting for the next stale refresh or cron tick.
-  if (steam?.playtimePublic && games.length > 0) {
-    await appendDailySnapshot({
+  if (steam?.playtimePublic && library.length > 0) {
+    await seedMissingDailyFromSteamWindow({
       profileId: profile.id,
-      steamId: steam.steamId,
-      playtime: {
-        minutes: steam.playtimeMinutes,
-        isPublic: true,
-        games,
-      },
+      games: library,
+      at: now,
     });
   }
 
-  const twoWeeks = games.reduce(
-    (sum, game) => sum + game.playtimeTwoWeeksMinutes,
-    0,
-  );
-  const periods = await getPlaytimePeriods(profile.id, new Date(), {
-    forever: steam?.playtimeMinutes,
-    twoWeeks,
-  });
+  const periods = steam
+    ? await getPlaytimePeriods(profile.id, now)
+    : {
+        sampledFrom: null,
+        snapshotCount: 0,
+        twoWeeks: null,
+        today: null,
+        week: null,
+        month: null,
+      };
+
+  const [todayByApp, weekByApp] = await Promise.all([
+    sumDailyMinutesByApp({ profileId: profile.id, fromDay: today, toDay: today }),
+    sumDailyMinutesByApp({
+      profileId: profile.id,
+      fromDay: utcDayString(rollingWindowStart(now, PERIOD_DAYS.week)),
+      toDay: today,
+    }),
+  ]);
+
+  const games = library.map((game) => ({
+    ...game,
+    todayMinutes: todayByApp.get(game.appId) ?? 0,
+    weekMinutes: weekByApp.get(game.appId) ?? 0,
+  }));
 
   return { profile, steam, games, periods };
 }

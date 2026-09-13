@@ -10,10 +10,9 @@ import {
   getProfileBySteamId,
   isUsernameTaken,
   normalizeUsername,
-  saveSteamPlaytime,
   validateUsername,
 } from "@/lib/db/profiles";
-import { fetchPlaytime } from "@/lib/steam-api";
+import { syncLinkedPlaytime } from "@/lib/playtime-sync";
 import {
   clearedTicketCookieOptions,
   getSteamTicket,
@@ -152,12 +151,10 @@ async function linkSteamAndSync(
   const profile = await getProfileByAuthUserId(authUserId);
   if (!profile) return;
 
-  const playtime = await fetchPlaytime(steamId);
-  await saveSteamPlaytime({
+  await syncLinkedPlaytime({
     profileId: profile.id,
     steamId,
     profileUrl,
-    playtime,
   });
 }
 

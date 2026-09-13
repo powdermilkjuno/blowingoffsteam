@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
-import type { PeriodDelta } from "@/lib/db/snapshots";
+import type { PeriodDelta } from "@/lib/db/daily";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 
 export function PlaytimeView({
@@ -69,7 +69,7 @@ export function PlaytimeView({
 
       {steam && steam.playtimePublic && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SampledStat label="Last 2 weeks" delta={periods.twoWeeks} empty="Steam, none" />
+          <SampledStat label="Last 2 weeks" delta={periods.twoWeeks} />
           <SampledStat label="Today" delta={periods.today} />
           <SampledStat label="This week" delta={periods.week} />
           <SampledStat label="This month" delta={periods.month} />
@@ -78,14 +78,11 @@ export function PlaytimeView({
 
       {steam && steam.playtimePublic && (
         <p className="text-xs text-[#5a6b7c]">
-          Lifetime and last 2 weeks come from Steam. Today and this week are
-          lifetime deltas we sample (UTC). This month uses that delta, or
-          Steam&apos;s 14-day window when we do not yet have a sample from
-          before the 1st
-          {periods.month?.source === "steam_2weeks_overlap"
-            ? " — that window still overlaps last month"
-            : ""}
-          . Tracking started{" "}
+          Lifetime still comes from Steam. Today, this week (last 7 days), last
+          2 weeks, and this month (last 4 weeks) are minutes we hold from each
+          refresh or daily cron — they do not reset when Steam is polled again.
+          Today clears at UTC midnight; older days stay in the rolling windows.
+          Tracking started{" "}
           {periods.sampledFrom
             ? periods.sampledFrom.toISOString().slice(0, 10)
             : "today"}
@@ -162,9 +159,9 @@ export function PlaytimeView({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-white">{game.name}</p>
                   <p className="text-xs text-[#5a6b7c]">
-                    {game.playtimeTwoWeeksMinutes > 0
-                      ? `${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
-                      : "No Steam 2-week play"}
+                    {formatPlaytime(game.todayMinutes)} today
+                    {" · "}
+                    {formatPlaytime(game.weekMinutes)} this week
                     {game.lastPlayedAt
                       ? ` · last launched ${new Date(game.lastPlayedAt * 1000).toISOString().slice(0, 10)}`
                       : ""}
@@ -201,25 +198,26 @@ function SteamStat({
   );
 }
 
-function periodNote(delta: PeriodDelta): string {
-  switch (delta.source) {
-    case "sampled":
-      return "sampled, UTC";
-    case "since_tracking":
-      return "since we started watching";
-    case "steam_2weeks":
-      return "Steam last 14 days (inside this month)";
-    case "steam_2weeks_overlap":
-      return "Steam last 14 days (overlaps last month)";
-    default:
-      return "sampled";
+function periodNote(label: string, delta: PeriodDelta): string {
+  const window =
+    label === "Today"
+      ? "today, UTC"
+      : label === "This week"
+        ? "last 7 days"
+        : label === "This month"
+          ? "last 4 weeks"
+          : "last 14 days";
+
+  if (delta.source === "since_tracking") {
+    return `${window} · since we started watching`;
   }
+  return `${window} · held`;
 }
 
 function SampledStat({
   label,
   delta,
-  empty = "needs a second sample",
+  empty = "no held minutes yet",
 }: {
   label: string;
   delta: PeriodDelta | null;
@@ -233,7 +231,7 @@ function SampledStat({
     <SteamStat
       label={label}
       value={formatPlaytime(delta.minutes)}
-      note={periodNote(delta)}
+      note={periodNote(label, delta)}
     />
   );
 }

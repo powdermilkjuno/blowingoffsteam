@@ -2,9 +2,13 @@ import { randomInt } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import type { GamePlaytime, Playtime } from "../steam-api";
 import { steamGameIconUrl } from "../steam-api";
+import {
+  applyPlaytimeIncrements,
+  backfillDailyFromSnapshots,
+} from "./daily";
 import { getDb } from "./index";
 import { gamePlaytime, profiles, steamLinks } from "./schema";
-import { appendDailySnapshot } from "./snapshots";
+import { recordPlaytimeSnapshot } from "./snapshots";
 
 // Crockford-style alphabet: no I, L, O or U, so codes can be read aloud.
 const FRIEND_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -263,6 +267,20 @@ export async function saveSteamPlaytime(input: {
   // wiping the library every time Steam hides it.
   if (!input.playtime.isPublic) return;
 
+  await backfillDailyFromSnapshots(input.profileId);
+
+  const previousRows = await db
+    .select({
+      appId: gamePlaytime.appId,
+      playtimeForever: gamePlaytime.playtimeForever,
+    })
+    .from(gamePlaytime)
+    .where(eq(gamePlaytime.profileId, input.profileId));
+
+  const previousForever = new Map(
+    previousRows.map((row) => [row.appId, row.playtimeForever]),
+  );
+
   await db.delete(gamePlaytime).where(eq(gamePlaytime.profileId, input.profileId));
 
   const rows = input.playtime.games.map((game) => ({
@@ -280,9 +298,16 @@ export async function saveSteamPlaytime(input: {
     await db.insert(gamePlaytime).values(rows.slice(i, i + chunkSize));
   }
 
-  // Current library is replaced above. History is append-only and at most
-  // one sample per UTC day so the cron and a login the same day do not double-write.
-  await appendDailySnapshot({
+  // Library forever is the new baseline. Any increase since the last sync is
+  // added to today's held bucket — cron and the refresh button share this path.
+  await applyPlaytimeIncrements({
+    profileId: input.profileId,
+    previousForever,
+    playtime: input.playtime,
+    at: syncedAt,
+  });
+
+  await recordPlaytimeSnapshot({
     profileId: input.profileId,
     steamId: input.steamId,
     playtime: input.playtime,
