@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
+import type { PeriodDelta } from "@/lib/db/snapshots";
 
 export function PlaytimeView({
   data,
@@ -10,7 +11,7 @@ export function PlaytimeView({
   data: DashboardData;
   viewerIsOwner: boolean;
 }) {
-  const { profile, steam, games } = data;
+  const { profile, steam, games, periods } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
 
   return (
@@ -53,11 +54,35 @@ export function PlaytimeView({
               {formatPlaytime(steam.playtimeMinutes)}
             </p>
             <p className="text-xs uppercase tracking-wide text-[#8f98a0]">
-              Total playtime
+              Lifetime
             </p>
+            <p className="text-[11px] text-[#5a6b7c]">from Steam</p>
           </div>
         )}
       </section>
+
+      {steam && steam.playtimePublic && (
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <SteamStat
+            label="Last 2 weeks"
+            value={formatPlaytime(
+              games.reduce((sum, game) => sum + game.playtimeTwoWeeksMinutes, 0),
+            )}
+            note="Steam, rolling"
+          />
+          <SampledStat label="Today" delta={periods.today} />
+          <SampledStat label="This week" delta={periods.week} />
+          <SampledStat label="This month" delta={periods.month} />
+        </section>
+      )}
+
+      {steam && steam.playtimePublic && periods.sampledFrom && (
+        <p className="text-xs text-[#5a6b7c]">
+          Today / week / month are our samples, not Steam. Tracking started{" "}
+          {periods.sampledFrom.toISOString().slice(0, 10)} (UTC). A daily job
+          records lifetime totals so these fill in after the next days.
+        </p>
+      )}
 
       {!steam && (
         <EmptyState
@@ -129,8 +154,8 @@ export function PlaytimeView({
                   <p className="truncate text-white">{game.name}</p>
                   {game.playtimeTwoWeeksMinutes > 0 && (
                     <p className="text-xs text-[#66c0f4]">
-                      {formatPlaytime(game.playtimeTwoWeeksMinutes)} in the last
-                      2 weeks
+                      {formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2
+                      weeks (Steam)
                     </p>
                   )}
                 </div>
@@ -144,6 +169,44 @@ export function PlaytimeView({
         </section>
       )}
     </div>
+  );
+}
+
+function SteamStat({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <div className="rounded border border-[#2a3f5a] bg-[#16202d] px-4 py-3">
+      <p className="text-lg font-semibold text-white">{value}</p>
+      <p className="text-xs uppercase tracking-wide text-[#8f98a0]">{label}</p>
+      <p className="text-[11px] text-[#5a6b7c]">{note}</p>
+    </div>
+  );
+}
+
+function SampledStat({ label, delta }: { label: string; delta: PeriodDelta | null }) {
+  if (!delta) {
+    return (
+      <SteamStat
+        label={label}
+        value="—"
+        note="needs a second sample"
+      />
+    );
+  }
+
+  return (
+    <SteamStat
+      label={label}
+      value={formatPlaytime(delta.minutes)}
+      note={delta.complete ? "sampled, UTC" : "since we started watching"}
+    />
   );
 }
 

@@ -6,16 +6,23 @@ import {
   type Profile,
   type SteamLink,
 } from "./db/profiles";
+import {
+  appendDailySnapshot,
+  getPlaytimePeriods,
+  type PlaytimePeriods,
+} from "./db/snapshots";
 import { fetchPlaytime, type GamePlaytime } from "./steam-api";
 
 export type DashboardData = {
   profile: Profile;
   steam: SteamLink | null;
   games: GamePlaytime[];
+  periods: PlaytimePeriods;
 };
 
 // Steam playtime is only refreshed on demand, so a stale link is re-pulled the
-// next time someone looks at the dashboard.
+// next time someone looks at the dashboard. That refresh also writes today's
+// snapshot if the cron has not already.
 export async function loadDashboard(profile: Profile): Promise<DashboardData> {
   let steam = await getSteamLink(profile.id);
 
@@ -36,5 +43,21 @@ export async function loadDashboard(profile: Profile): Promise<DashboardData> {
 
   const games = steam ? await getProfileGames(profile.id) : [];
 
-  return { profile, steam, games };
+  // Anyone who already has a library but no history yet gets day zero now,
+  // instead of waiting for the next stale refresh or cron tick.
+  if (steam?.playtimePublic && games.length > 0) {
+    await appendDailySnapshot({
+      profileId: profile.id,
+      steamId: steam.steamId,
+      playtime: {
+        minutes: steam.playtimeMinutes,
+        isPublic: true,
+        games,
+      },
+    });
+  }
+
+  const periods = await getPlaytimePeriods(profile.id);
+
+  return { profile, steam, games, periods };
 }

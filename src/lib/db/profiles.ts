@@ -4,6 +4,7 @@ import type { GamePlaytime, Playtime } from "../steam-api";
 import { steamGameIconUrl } from "../steam-api";
 import { getDb } from "./index";
 import { gamePlaytime, profiles, steamLinks } from "./schema";
+import { appendDailySnapshot } from "./snapshots";
 
 // Crockford-style alphabet: no I, L, O or U, so codes can be read aloud.
 const FRIEND_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -278,6 +279,15 @@ export async function saveSteamPlaytime(input: {
   for (let i = 0; i < rows.length; i += chunkSize) {
     await db.insert(gamePlaytime).values(rows.slice(i, i + chunkSize));
   }
+
+  // Current library is replaced above. History is append-only and at most
+  // one sample per UTC day so the cron and a login the same day do not double-write.
+  await appendDailySnapshot({
+    profileId: input.profileId,
+    steamId: input.steamId,
+    playtime: input.playtime,
+    capturedAt: syncedAt,
+  });
 }
 
 export function isStale(syncedAt: Date): boolean {
