@@ -6,13 +6,15 @@ import {
   computePlaytimeIncrements,
   dailyDiffsFromClosings,
   PERIOD_DAYS,
+  priorUtcWindow,
   rollingWindowStart,
+  steamSeedDay,
   utcDayString,
 } from "../playtime-windows";
 import { getDb } from "./index";
 import { playtimeDaily, playtimeSnapshots } from "./schema";
 
-export type PeriodSource = "sampled" | "since_tracking";
+export type PeriodSource = "sampled" | "since_tracking" | "steam_2weeks";
 
 export type PeriodDelta = {
   minutes: number;
@@ -70,6 +72,19 @@ async function incrementDailyMinutes(input: {
   day: string;
   minutes: number;
 }): Promise<void> {
+  if (input.minutes === 0) {
+    await getDb()
+      .insert(playtimeDaily)
+      .values({
+        profileId: input.profileId,
+        appId: input.appId,
+        day: input.day,
+        minutes: 0,
+      })
+      .onConflictDoNothing();
+    return;
+  }
+
   await getDb()
     .insert(playtimeDaily)
     .values({
@@ -81,9 +96,31 @@ async function incrementDailyMinutes(input: {
     .onConflictDoUpdate({
       target: [playtimeDaily.profileId, playtimeDaily.appId, playtimeDaily.day],
       set: {
-        minutes: sql`${playtimeDaily.minutes} + ${input.minutes}`,
+        minutes: sql`greatest(0, ${playtimeDaily.minutes} + ${input.minutes})`,
       },
     });
+}
+
+async function shiftDailyMinutes(input: {
+  profileId: string;
+  appId: number;
+  fromDay: string;
+  toDay: string;
+  minutes: number;
+}): Promise<void> {
+  if (input.minutes <= 0 || input.fromDay === input.toDay) return;
+  await incrementDailyMinutes({
+    profileId: input.profileId,
+    appId: input.appId,
+    day: input.fromDay,
+    minutes: -input.minutes,
+  });
+  await incrementDailyMinutes({
+    profileId: input.profileId,
+    appId: input.appId,
+    day: input.toDay,
+    minutes: input.minutes,
+  });
 }
 
 export async function ensureTodayRow(
@@ -156,9 +193,55 @@ export async function applyPlaytimeIncrements(input: {
   });
 }
 
-// One-time recovery when same-day snapshot overwrites erased the opening
-// baseline. Steam's 14-day field is only copied onto last-played day if we
-// have never held minutes for that game.
+async function repairTodaySteamSeeds(input: {
+  profileId: string;
+  games: {
+    appId: number;
+    playtimeTwoWeeksMinutes: number;
+    lastPlayedAt: number | null;
+  }[];
+  at: Date;
+}): Promise<void> {
+  const today = utcDayString(input.at);
+
+  for (const game of input.games) {
+    if (game.playtimeTwoWeeksMinutes <= 0) continue;
+
+    const target = steamSeedDay(input.at, game.lastPlayedAt);
+    if (target === today) continue;
+
+    const todayMinutes = await sumDailyMinutes({
+      profileId: input.profileId,
+      appId: game.appId,
+      fromDay: today,
+      toDay: today,
+    });
+    if (todayMinutes <= 0) continue;
+
+    // Seed copied the whole Steam 14-day number onto today. Real today
+    // play comes from forever-deltas and will not match that number.
+    if (todayMinutes !== game.playtimeTwoWeeksMinutes) continue;
+
+    await shiftDailyMinutes({
+      profileId: input.profileId,
+      appId: game.appId,
+      fromDay: today,
+      toDay: target,
+      minutes: todayMinutes,
+    });
+    await shiftDailyMinutes({
+      profileId: input.profileId,
+      appId: ACCOUNT_APP_ID,
+      fromDay: today,
+      toDay: target,
+      minutes: todayMinutes,
+    });
+  }
+}
+
+// First sync / onboard: copy Steam's 14-day play onto a closed day so this
+// week and last 2 weeks are never an empty slate. Today stays 0 until a
+// later refresh records a forever-delta.
 export async function seedMissingDailyFromSteamWindow(input: {
   profileId: string;
   games: {
@@ -169,18 +252,13 @@ export async function seedMissingDailyFromSteamWindow(input: {
   at?: Date;
 }): Promise<void> {
   const at = input.at ?? new Date();
-  const windowStart = rollingWindowStart(at, PERIOD_DAYS.twoWeeks);
+  await repairTodaySteamSeeds({ ...input, at });
 
   for (const game of input.games) {
-    if (game.playtimeTwoWeeksMinutes <= 0 || game.lastPlayedAt == null) {
-      continue;
-    }
-
-    const lastPlayed = new Date(game.lastPlayedAt * 1000);
-    if (lastPlayed < windowStart || lastPlayed > at) continue;
+    if (game.playtimeTwoWeeksMinutes <= 0) continue;
     if (await hasPositiveDaily(input.profileId, game.appId)) continue;
 
-    const day = utcDayString(lastPlayed);
+    const day = steamSeedDay(at, game.lastPlayedAt);
     await incrementDailyMinutes({
       profileId: input.profileId,
       appId: game.appId,
@@ -336,9 +414,28 @@ function toPeriod(
   };
 }
 
+function heldOrSteam(
+  held: number,
+  since: Date,
+  sampledFrom: Date | null,
+  steamMinutes?: number,
+): PeriodDelta {
+  if (held > 0) return toPeriod(held, since, sampledFrom);
+  if (steamMinutes && steamMinutes > 0) {
+    return {
+      minutes: steamMinutes,
+      since,
+      complete: true,
+      source: "steam_2weeks",
+    };
+  }
+  return toPeriod(0, since, sampledFrom);
+}
+
 export async function getPlaytimePeriods(
   profileId: string,
   at: Date = new Date(),
+  live?: { twoWeeks?: number },
 ): Promise<PlaytimePeriods> {
   await backfillDailyFromSnapshots(profileId);
   await ensureTodayRow(profileId, at);
@@ -350,47 +447,57 @@ export async function getPlaytimePeriods(
     : null;
   const snapshotCount = await trackedDayCount(profileId);
 
-  const windows = {
-    today: { days: PERIOD_DAYS.today, start: rollingWindowStart(at, PERIOD_DAYS.today) },
-    week: { days: PERIOD_DAYS.week, start: rollingWindowStart(at, PERIOD_DAYS.week) },
-    twoWeeks: {
-      days: PERIOD_DAYS.twoWeeks,
-      start: rollingWindowStart(at, PERIOD_DAYS.twoWeeks),
-    },
-    month: { days: PERIOD_DAYS.month, start: rollingWindowStart(at, PERIOD_DAYS.month) },
-  };
+  const weekWindow = priorUtcWindow(at, PERIOD_DAYS.week);
+  const monthWindow = priorUtcWindow(at, PERIOD_DAYS.month);
+  const twoWeeksStart = rollingWindowStart(at, PERIOD_DAYS.twoWeeks);
+  const todayStart = rollingWindowStart(at, PERIOD_DAYS.today);
 
   const [todayMinutes, weekMinutes, twoWeekMinutes, monthMinutes] =
     await Promise.all([
       sumDailyMinutes({
         profileId,
-        fromDay: utcDayString(windows.today.start),
+        fromDay: today,
         toDay: today,
       }),
       sumDailyMinutes({
         profileId,
-        fromDay: utcDayString(windows.week.start),
+        fromDay: utcDayString(weekWindow.from),
+        toDay: utcDayString(weekWindow.to),
+      }),
+      sumDailyMinutes({
+        profileId,
+        fromDay: utcDayString(twoWeeksStart),
         toDay: today,
       }),
       sumDailyMinutes({
         profileId,
-        fromDay: utcDayString(windows.twoWeeks.start),
-        toDay: today,
-      }),
-      sumDailyMinutes({
-        profileId,
-        fromDay: utcDayString(windows.month.start),
-        toDay: today,
+        fromDay: utcDayString(monthWindow.from),
+        toDay: utcDayString(monthWindow.to),
       }),
     ]);
 
   return {
     sampledFrom,
     snapshotCount,
-    today: toPeriod(todayMinutes, windows.today.start, sampledFrom),
-    week: toPeriod(weekMinutes, windows.week.start, sampledFrom),
-    twoWeeks: toPeriod(twoWeekMinutes, windows.twoWeeks.start, sampledFrom),
-    month: toPeriod(monthMinutes, windows.month.start, sampledFrom),
+    today: toPeriod(todayMinutes, todayStart, sampledFrom),
+    week: heldOrSteam(
+      weekMinutes,
+      weekWindow.from,
+      sampledFrom,
+      live?.twoWeeks,
+    ),
+    twoWeeks: heldOrSteam(
+      twoWeekMinutes,
+      twoWeeksStart,
+      sampledFrom,
+      live?.twoWeeks,
+    ),
+    month: heldOrSteam(
+      monthMinutes,
+      monthWindow.from,
+      sampledFrom,
+      live?.twoWeeks,
+    ),
   };
 }
 

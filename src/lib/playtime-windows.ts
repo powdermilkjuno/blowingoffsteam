@@ -29,6 +29,36 @@ export function rollingWindowStart(at: Date, dayCount: number): Date {
   return start;
 }
 
+// Closed days only: yesterday back `dayCount` days. Today is never included.
+export function priorUtcWindow(
+  at: Date,
+  dayCount: number,
+): { from: Date; to: Date } {
+  const to = startOfUtcDay(at);
+  to.setUTCDate(to.getUTCDate() - 1);
+  const from = new Date(to);
+  from.setUTCDate(from.getUTCDate() - (dayCount - 1));
+  return { from, to };
+}
+
+// Steam's 14-day total is never "played today" — last-played is only a
+// launch time. Brand-new accounts need this on a closed day so this week
+// and last 2 weeks show something on first sync.
+export function steamSeedDay(
+  at: Date,
+  lastPlayedAt: number | null,
+): string {
+  const today = utcDayString(at);
+  const yesterday = utcDayString(priorUtcWindow(at, 1).to);
+  const windowStart = utcDayString(rollingWindowStart(at, PERIOD_DAYS.twoWeeks));
+
+  if (lastPlayedAt == null) return yesterday;
+
+  const lastDay = utcDayString(new Date(lastPlayedAt * 1000));
+  if (lastDay >= windowStart && lastDay < today) return lastDay;
+  return yesterday;
+}
+
 export function computePlaytimeIncrements(
   previousForever: Map<number, number>,
   games: { appId: number; playtimeMinutes: number }[],

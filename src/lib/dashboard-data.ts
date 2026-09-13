@@ -12,7 +12,7 @@ import {
   type PlaytimePeriods,
 } from "./db/daily";
 import { syncLinkedPlaytime } from "./playtime-sync";
-import { rollingWindowStart, utcDayString, PERIOD_DAYS } from "./playtime-windows";
+import { priorUtcWindow, utcDayString, PERIOD_DAYS } from "./playtime-windows";
 import type { GamePlaytime } from "./steam-api";
 
 export type DashboardGame = GamePlaytime & {
@@ -55,8 +55,12 @@ export async function loadDashboard(profile: Profile): Promise<DashboardData> {
     });
   }
 
+  const steamTwoWeeks = library.reduce(
+    (sum, game) => sum + game.playtimeTwoWeeksMinutes,
+    0,
+  );
   const periods = steam
-    ? await getPlaytimePeriods(profile.id, now)
+    ? await getPlaytimePeriods(profile.id, now, { twoWeeks: steamTwoWeeks })
     : {
         sampledFrom: null,
         snapshotCount: 0,
@@ -66,12 +70,13 @@ export async function loadDashboard(profile: Profile): Promise<DashboardData> {
         month: null,
       };
 
+  const weekWindow = priorUtcWindow(now, PERIOD_DAYS.week);
   const [todayByApp, weekByApp] = await Promise.all([
     sumDailyMinutesByApp({ profileId: profile.id, fromDay: today, toDay: today }),
     sumDailyMinutesByApp({
       profileId: profile.id,
-      fromDay: utcDayString(rollingWindowStart(now, PERIOD_DAYS.week)),
-      toDay: today,
+      fromDay: utcDayString(weekWindow.from),
+      toDay: utcDayString(weekWindow.to),
     }),
   ]);
 
