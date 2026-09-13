@@ -78,10 +78,10 @@ export function PlaytimeView({
 
       {steam && steam.playtimePublic && (
         <p className="text-xs text-[#5a6b7c]">
-          Lifetime still comes from Steam. Today, this week (last 7 days), last
-          2 weeks, and this month (last 4 weeks) are minutes we hold from each
-          refresh or daily cron — they do not reset when Steam is polled again.
-          Today clears at UTC midnight; older days stay in the rolling windows.
+          Lifetime still comes from Steam. On first link we copy Steam&apos;s
+          last 14 days onto this week / last 2 weeks / this month — never onto
+          today. Today only grows from later refreshes. This week is the
+          previous 7 UTC days. At midnight, today clears into this week.
           Tracking started{" "}
           {periods.sampledFrom
             ? periods.sampledFrom.toISOString().slice(0, 10)
@@ -162,6 +162,9 @@ export function PlaytimeView({
                     {formatPlaytime(game.todayMinutes)} today
                     {" · "}
                     {formatPlaytime(game.weekMinutes)} this week
+                    {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
+                      ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
+                      : ""}
                     {game.lastPlayedAt
                       ? ` · last launched ${new Date(game.lastPlayedAt * 1000).toISOString().slice(0, 10)}`
                       : ""}
@@ -203,11 +206,14 @@ function periodNote(label: string, delta: PeriodDelta): string {
     label === "Today"
       ? "today, UTC"
       : label === "This week"
-        ? "last 7 days"
+        ? "previous 7 days"
         : label === "This month"
           ? "last 4 weeks"
           : "last 14 days";
 
+  if (delta.source === "steam_2weeks") {
+    return "Steam last 14 days";
+  }
   if (delta.source === "since_tracking") {
     return `${window} · since we started watching`;
   }
