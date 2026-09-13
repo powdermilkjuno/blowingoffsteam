@@ -10,17 +10,25 @@ export type SnapshotPoint = {
   forever: number;
 };
 
+export type PeriodSource =
+  | "sampled"
+  | "since_tracking"
+  | "steam_2weeks"
+  | "steam_2weeks_overlap";
+
 export type PeriodDelta = {
   minutes: number;
   since: Date;
   // True when we have a sample from before the period started, so this is a
   // full calendar day/week/month — not just "since we started watching."
   complete: boolean;
+  source: PeriodSource;
 };
 
 export type PlaytimePeriods = {
   sampledFrom: Date | null;
   snapshotCount: number;
+  twoWeeks: PeriodDelta | null;
   today: PeriodDelta | null;
   week: PeriodDelta | null;
   month: PeriodDelta | null;
@@ -50,6 +58,16 @@ export function startOfUtcMonth(at: Date): Date {
   return new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), 1));
 }
 
+export function twoWeeksWindowStart(at: Date): Date {
+  const day = startOfUtcDay(at);
+  day.setUTCDate(day.getUTCDate() - 14);
+  return day;
+}
+
+export function twoWeeksFitsInMonth(at: Date): boolean {
+  return twoWeeksWindowStart(at) >= startOfUtcMonth(at);
+}
+
 export function deltaFromSnapshots(opts: {
   latest: SnapshotPoint | null;
   first: SnapshotPoint | null;
@@ -63,6 +81,7 @@ export function deltaFromSnapshots(opts: {
       minutes: Math.max(0, latest.forever - baseline.forever),
       since: baseline.capturedAt,
       complete: true,
+      source: "sampled",
     };
   }
 
@@ -70,6 +89,31 @@ export function deltaFromSnapshots(opts: {
     minutes: Math.max(0, latest.forever - first.forever),
     since: first.capturedAt,
     complete: false,
+    source: "since_tracking",
+  };
+}
+
+// Steam's rolling 14 days is the only recent number we get for free. Use it
+// for "this month" only when our forever-delta is incomplete (no sample from
+// before the 1st). After the 14th, that window sits inside the month. Before
+// that it overlaps last month — still the best fill-in, but labeled as such.
+export function resolveMonthPeriod(
+  sampled: PeriodDelta | null,
+  twoWeeksMinutes: number,
+  at: Date,
+): PeriodDelta | null {
+  if (sampled?.complete) return sampled;
+  if (twoWeeksMinutes <= 0) return sampled;
+
+  const windowStart = twoWeeksWindowStart(at);
+  const sampledMinutes = sampled?.minutes ?? 0;
+  if (twoWeeksMinutes <= sampledMinutes) return sampled;
+
+  return {
+    minutes: twoWeeksMinutes,
+    since: windowStart,
+    complete: false,
+    source: twoWeeksFitsInMonth(at) ? "steam_2weeks" : "steam_2weeks_overlap",
   };
 }
 
@@ -107,23 +151,18 @@ export async function hasSnapshotOnUtcDay(
   return row !== undefined;
 }
 
-export async function appendDailySnapshot(input: {
+function snapshotRows(input: {
   profileId: string;
   steamId: string;
   playtime: Playtime;
-  capturedAt?: Date;
-}): Promise<boolean> {
-  if (!input.playtime.isPublic) return false;
-
-  const capturedAt = input.capturedAt ?? new Date();
-  if (await hasSnapshotOnUtcDay(input.profileId, capturedAt)) return false;
-
-  const rows = [
+  capturedAt: Date;
+}) {
+  return [
     {
       profileId: input.profileId,
       steamId: input.steamId,
       appId: ACCOUNT_APP_ID,
-      capturedAt,
+      capturedAt: input.capturedAt,
       playtimeForever: input.playtime.minutes,
       playtimeTwoWeeks: input.playtime.games.reduce(
         (sum, game) => sum + game.playtimeTwoWeeksMinutes,
@@ -134,16 +173,69 @@ export async function appendDailySnapshot(input: {
       profileId: input.profileId,
       steamId: input.steamId,
       appId: game.appId,
-      capturedAt,
+      capturedAt: input.capturedAt,
       playtimeForever: game.playtimeMinutes,
       playtimeTwoWeeks: game.playtimeTwoWeeksMinutes,
     })),
   ];
+}
 
+export async function appendDailySnapshot(input: {
+  profileId: string;
+  steamId: string;
+  playtime: Playtime;
+  capturedAt?: Date;
+}): Promise<boolean> {
+  return recordPlaytimeSnapshot(input);
+}
+
+// One row-set per UTC day. A later refresh the same day overwrites today's
+// forever / 2-week numbers for every game so the library stays current.
+export async function recordPlaytimeSnapshot(input: {
+  profileId: string;
+  steamId: string;
+  playtime: Playtime;
+  capturedAt?: Date;
+}): Promise<boolean> {
+  if (!input.playtime.isPublic) return false;
+
+  const capturedAt = input.capturedAt ?? new Date();
   const db = getDb();
-  const chunkSize = 100;
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    await db.insert(playtimeSnapshots).values(rows.slice(i, i + chunkSize));
+  const rows = snapshotRows({ ...input, capturedAt });
+
+  if (!(await hasSnapshotOnUtcDay(input.profileId, capturedAt))) {
+    const chunkSize = 100;
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      await db.insert(playtimeSnapshots).values(rows.slice(i, i + chunkSize));
+    }
+    return true;
+  }
+
+  const dayStart = startOfUtcDay(capturedAt);
+  const nextDay = new Date(dayStart);
+  nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+  for (const row of rows) {
+    const updated = await db
+      .update(playtimeSnapshots)
+      .set({
+        playtimeForever: row.playtimeForever,
+        playtimeTwoWeeks: row.playtimeTwoWeeks,
+        capturedAt,
+      })
+      .where(
+        and(
+          eq(playtimeSnapshots.profileId, row.profileId),
+          eq(playtimeSnapshots.appId, row.appId),
+          sql`${playtimeSnapshots.capturedAt} >= ${dayStart}`,
+          sql`${playtimeSnapshots.capturedAt} < ${nextDay}`,
+        ),
+      )
+      .returning({ id: playtimeSnapshots.id });
+
+    if (updated.length === 0) {
+      await db.insert(playtimeSnapshots).values(row);
+    }
   }
 
   return true;
@@ -233,20 +325,38 @@ async function accountSnapshotCount(profileId: string): Promise<number> {
 export async function getPlaytimePeriods(
   profileId: string,
   at: Date = new Date(),
+  live?: { forever?: number; twoWeeks?: number },
 ): Promise<PlaytimePeriods> {
-  const [latest, first, snapshotCount] = await Promise.all([
+  const [storedLatest, first, snapshotCount] = await Promise.all([
     latestAccountSnapshot(profileId),
     firstAccountSnapshot(profileId),
     accountSnapshotCount(profileId),
   ]);
 
+  const latest =
+    storedLatest && live?.forever !== undefined
+      ? { capturedAt: at, forever: live.forever }
+      : storedLatest;
+
+  const twoWeeksMinutes = live?.twoWeeks ?? 0;
+  const twoWeeks: PeriodDelta | null =
+    twoWeeksMinutes > 0
+      ? {
+          minutes: twoWeeksMinutes,
+          since: twoWeeksWindowStart(at),
+          complete: true,
+          source: "steam_2weeks",
+        }
+      : null;
+
   if (!latest || !first) {
     return {
-      sampledFrom: null,
+      sampledFrom: first?.capturedAt ?? null,
       snapshotCount,
+      twoWeeks,
       today: null,
       week: null,
-      month: null,
+      month: resolveMonthPeriod(null, twoWeeksMinutes, at),
     };
   }
 
@@ -256,12 +366,19 @@ export async function getPlaytimePeriods(
     lastAccountSnapshotBefore(profileId, startOfUtcMonth(at)),
   ]);
 
+  const sampledMonth = deltaFromSnapshots({
+    latest,
+    first,
+    baseline: beforeMonth,
+  });
+
   return {
     sampledFrom: first.capturedAt,
     snapshotCount,
+    twoWeeks,
     today: deltaFromSnapshots({ latest, first, baseline: beforeToday }),
     week: deltaFromSnapshots({ latest, first, baseline: beforeWeek }),
-    month: deltaFromSnapshots({ latest, first, baseline: beforeMonth }),
+    month: resolveMonthPeriod(sampledMonth, twoWeeksMinutes, at),
   };
 }
 

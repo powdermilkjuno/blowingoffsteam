@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/snapshots";
+import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 
 export function PlaytimeView({
   data,
@@ -49,38 +50,46 @@ export function PlaytimeView({
         </div>
 
         {steam && (
-          <div className="text-right">
-            <p className="text-2xl font-semibold text-white">
-              {formatPlaytime(steam.playtimeMinutes)}
-            </p>
-            <p className="text-xs uppercase tracking-wide text-[#8f98a0]">
-              Lifetime
-            </p>
-            <p className="text-[11px] text-[#5a6b7c]">from Steam</p>
+          <div className="space-y-2 text-right">
+            <div>
+              <p className="text-2xl font-semibold text-white">
+                {formatPlaytime(steam.playtimeMinutes)}
+              </p>
+              <p className="text-xs uppercase tracking-wide text-[#8f98a0]">
+                Lifetime
+              </p>
+              <p className="text-[11px] text-[#5a6b7c]">from Steam</p>
+            </div>
+            {viewerIsOwner && (
+              <RefreshPlaytimeButton lastSyncedAt={steam.syncedAt} />
+            )}
           </div>
         )}
       </section>
 
       {steam && steam.playtimePublic && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SteamStat
-            label="Last 2 weeks"
-            value={formatPlaytime(
-              games.reduce((sum, game) => sum + game.playtimeTwoWeeksMinutes, 0),
-            )}
-            note="Steam, rolling"
-          />
+          <SampledStat label="Last 2 weeks" delta={periods.twoWeeks} empty="Steam, none" />
           <SampledStat label="Today" delta={periods.today} />
           <SampledStat label="This week" delta={periods.week} />
           <SampledStat label="This month" delta={periods.month} />
         </section>
       )}
 
-      {steam && steam.playtimePublic && periods.sampledFrom && (
+      {steam && steam.playtimePublic && (
         <p className="text-xs text-[#5a6b7c]">
-          Today / week / month are our samples, not Steam. Tracking started{" "}
-          {periods.sampledFrom.toISOString().slice(0, 10)} (UTC). A daily job
-          records lifetime totals so these fill in after the next days.
+          Lifetime and last 2 weeks come from Steam. Today and this week are
+          lifetime deltas we sample (UTC). This month uses that delta, or
+          Steam&apos;s 14-day window when we do not yet have a sample from
+          before the 1st
+          {periods.month?.source === "steam_2weeks_overlap"
+            ? " — that window still overlaps last month"
+            : ""}
+          . Tracking started{" "}
+          {periods.sampledFrom
+            ? periods.sampledFrom.toISOString().slice(0, 10)
+            : "today"}
+          .
         </p>
       )}
 
@@ -152,12 +161,14 @@ export function PlaytimeView({
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-white">{game.name}</p>
-                  {game.playtimeTwoWeeksMinutes > 0 && (
-                    <p className="text-xs text-[#66c0f4]">
-                      {formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2
-                      weeks (Steam)
-                    </p>
-                  )}
+                  <p className="text-xs text-[#5a6b7c]">
+                    {game.playtimeTwoWeeksMinutes > 0
+                      ? `${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
+                      : "No Steam 2-week play"}
+                    {game.lastPlayedAt
+                      ? ` · last launched ${new Date(game.lastPlayedAt * 1000).toISOString().slice(0, 10)}`
+                      : ""}
+                  </p>
                 </div>
 
                 <p className="shrink-0 tabular-nums text-[#c7d5e0]">
@@ -190,22 +201,39 @@ function SteamStat({
   );
 }
 
-function SampledStat({ label, delta }: { label: string; delta: PeriodDelta | null }) {
+function periodNote(delta: PeriodDelta): string {
+  switch (delta.source) {
+    case "sampled":
+      return "sampled, UTC";
+    case "since_tracking":
+      return "since we started watching";
+    case "steam_2weeks":
+      return "Steam last 14 days (inside this month)";
+    case "steam_2weeks_overlap":
+      return "Steam last 14 days (overlaps last month)";
+    default:
+      return "sampled";
+  }
+}
+
+function SampledStat({
+  label,
+  delta,
+  empty = "needs a second sample",
+}: {
+  label: string;
+  delta: PeriodDelta | null;
+  empty?: string;
+}) {
   if (!delta) {
-    return (
-      <SteamStat
-        label={label}
-        value="—"
-        note="needs a second sample"
-      />
-    );
+    return <SteamStat label={label} value="—" note={empty} />;
   }
 
   return (
     <SteamStat
       label={label}
       value={formatPlaytime(delta.minutes)}
-      note={delta.complete ? "sampled, UTC" : "since we started watching"}
+      note={periodNote(delta)}
     />
   );
 }
