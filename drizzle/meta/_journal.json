@@ -8,6 +8,13 @@
       "when": 1789284781695,
       "tag": "0000_accounts_friends",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789290016279,
+      "tag": "0001_playtime_snapshots",
+      "breakpoints": true
     }
   ]
 }

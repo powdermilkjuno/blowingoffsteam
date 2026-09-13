@@ -15,7 +15,7 @@ export async function GET() {
     return Response.json({ error: "Onboarding incomplete" }, { status: 409 });
   }
 
-  const { steam, games } = await loadDashboard(profile);
+  const { steam, games, periods } = await loadDashboard(profile);
 
   return Response.json({
     profile: {
@@ -36,6 +36,13 @@ export async function GET() {
           syncedAt: steam.syncedAt,
         }
       : null,
+    periods: {
+      sampledFrom: periods.sampledFrom,
+      snapshotCount: periods.snapshotCount,
+      today: periods.today,
+      week: periods.week,
+      month: periods.month,
+    },
     games: games.map((game) => ({
       appId: game.appId,
       name: game.name,

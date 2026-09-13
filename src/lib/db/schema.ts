@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -51,6 +52,36 @@ export const gamePlaytime = pgTable(
     iconHash: text("icon_hash").notNull().default(""),
   },
   (table) => [primaryKey({ columns: [table.profileId, table.appId] })],
+);
+
+// Append-only lifetime samples. Steam has no day/week/month series; we need the difference (dataset in past - dataset now = delta = diff)
+// app_id 0 is the account rollup for the same captured_at. 
+export const playtimeSnapshots = pgTable(
+  "playtime_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    steamId: text("steam_id").notNull(),
+    appId: integer("app_id").notNull(),
+    capturedAt: timestamp("captured_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    playtimeForever: integer("playtime_forever").notNull().default(0),
+    playtimeTwoWeeks: integer("playtime_two_weeks").notNull().default(0),
+  },
+  (table) => [
+    index("playtime_snapshots_profile_captured_idx").on(
+      table.profileId,
+      table.capturedAt,
+    ),
+    index("playtime_snapshots_profile_app_captured_idx").on(
+      table.profileId,
+      table.appId,
+      table.capturedAt,
+    ),
+  ],
 );
 
 export const friendships = pgTable(
