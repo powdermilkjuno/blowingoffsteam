@@ -216,13 +216,20 @@ async function reseatSteamSeeds(input: {
     if (game.playtimeTwoWeeksMinutes <= 0) continue;
 
     const target = steamSeedDay(input.at, game.lastPlayedAt, input.timeZone);
-    const lastDay =
-      game.lastPlayedAt != null
-        ? dayStringInZone(new Date(game.lastPlayedAt * 1000), input.timeZone)
-        : null;
+    const lastPlayed = game.lastPlayedAt != null
+      ? new Date(game.lastPlayedAt * 1000)
+      : null;
+    const lastDay = lastPlayed
+      ? dayStringInZone(lastPlayed, input.timeZone)
+      : null;
+    const utcLastDay = lastPlayed
+      ? dayStringInZone(lastPlayed, "UTC")
+      : null;
     const candidates = [
       ...new Set(
-        [today, yesterday, lastDay].filter((day): day is string => Boolean(day)),
+        [today, yesterday, lastDay, utcLastDay].filter(
+          (day): day is string => Boolean(day),
+        ),
       ),
     ];
 
@@ -234,7 +241,10 @@ async function reseatSteamSeeds(input: {
         fromDay,
         toDay: fromDay,
       });
-      if (minutes !== game.playtimeTwoWeeksMinutes || minutes <= 0) continue;
+      if (minutes <= 0) continue;
+      const seedBlob = minutes === game.playtimeTwoWeeksMinutes;
+      const tzShift = fromDay === utcLastDay && lastDay === target;
+      if (!seedBlob && !tzShift) continue;
 
       await shiftDailyMinutes({
         profileId: input.profileId,
