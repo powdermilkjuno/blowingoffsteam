@@ -21,7 +21,9 @@ export default function AppHeader({
     <header className="hairline border-b border-line bg-bg/85 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
         <div className="flex min-w-0 items-center gap-6">
-          <Logo />
+          <span className="pointer-events-none">
+            <Logo />
+          </span>
           <nav className="flex items-center gap-1 overflow-x-auto">
             {links.map((link) => (
               <Link

@@ -25,9 +25,7 @@ export default async function SettingsPage() {
 
   return (
     <AppShell active="settings" displayName={profile.displayName}>
-      <PageIntro kicker="Account" title="Settings">
-        Handle, timezone, and how you get back in.
-      </PageIntro>
+      <PageIntro title="Settings" />
 
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Profile</h2>

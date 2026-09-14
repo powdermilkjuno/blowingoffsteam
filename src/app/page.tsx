@@ -6,8 +6,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { auth } from "@/lib/auth/server";
 import { SteamButton } from "./auth/_components/social-buttons";
 
-export const dynamic = "force-dynamic";
-
 const leaderboard = [
   { rank: "1ST", name: "kingofthepirates99", hours: "2.5h" },
   { rank: "2ND", name: "sunmoonstars", hours: "6.3h" },
@@ -22,7 +20,9 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen">
       <header className="hairline mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <Logo />
+        <span className="pointer-events-none">
+          <Logo />
+        </span>
         <nav className="flex items-center gap-2">
           <ThemeToggle />
           {signedIn ? (
@@ -55,12 +55,10 @@ export default async function LandingPage() {
               Built for Steam players
             </span>
             <h1 className="mt-5 text-4xl leading-[1.1] tracking-tight text-paper sm:text-5xl">
-              Know where your hours go.
+              Blowing off Steam
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted">
-              Blowing Off Steam tracks your Steam playtime automatically, shows
-              you how your week actually looked, and ranks you against the
-              friends who dare to check.
+              Check how much playtime you have on steam and compete with friends to see who can get the less playtime.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <SteamButton boxed={false} />
@@ -68,13 +66,10 @@ export default async function LandingPage() {
                 Email or Google
               </Button>
             </div>
-            <p className="mt-6 text-xs text-muted">
-              Free to use. Steam game details need to be public.
-            </p>
           </div>
 
           <TerminalWindow
-            title="dashboard.preview"
+            title="Leaderboard"
           >
 
             <div className="space-y-2">

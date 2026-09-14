@@ -35,8 +35,7 @@ export default async function FriendsPage() {
 
   return (
     <AppShell active="friends" displayName={profile.displayName}>
-      <PageIntro kicker="People" title="Friends">
-        Swap codes, accept invites, then compare libraries.
+      <PageIntro  title="Friends">
       </PageIntro>
 
       <Card className="corners space-y-3 p-6">
@@ -55,8 +54,6 @@ export default async function FriendsPage() {
           </form>
         </div>
         <p className="text-xs text-muted">
-          Share this so someone can send you a friend request. Rotating it does
-          not affect existing friends.
         </p>
       </Card>
 
