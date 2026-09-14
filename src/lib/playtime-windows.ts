@@ -99,8 +99,22 @@ export function priorUtcWindow(
   return { from, to };
 }
 
-// Last-played in this timezone is the day we can honestly date. Missing
-// last-played goes to yesterday so week/2-week still show something.
+export function recencyUnix(game: {
+  lastPlayedAt?: number | null;
+  lastHeldDay?: string | null;
+}): number {
+  if (game.lastPlayedAt) return game.lastPlayedAt;
+  if (game.lastHeldDay) {
+    const parsed = Date.parse(`${game.lastHeldDay}T12:00:00.000Z`);
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
+  }
+  return 0;
+}
+
+// Steam's 14-day minutes are a lump. A real rtime_last_played inside that
+// window is the day we can date. Missing last-played still means Steam saw
+// play in the last 14 days, so park on yesterday — never today (pull time)
+// and never the 14-day window start (that hides this week).
 export function steamSeedDay(
   at: Date,
   lastPlayedAt: number | null,
@@ -113,8 +127,7 @@ export function steamSeedDay(
   if (lastPlayedAt == null) return yesterday;
 
   const lastDay = dayStringInZone(new Date(lastPlayedAt * 1000), timeZone);
-  if (lastDay === today) return today;
-  if (lastDay >= windowStart && lastDay < today) return lastDay;
+  if (lastDay >= windowStart && lastDay <= today) return lastDay;
   return yesterday;
 }
 

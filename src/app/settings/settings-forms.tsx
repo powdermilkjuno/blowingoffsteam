@@ -17,14 +17,14 @@ import {
 function Feedback({ state }: { state: { error?: string; success?: string } }) {
   if (state.error) {
     return (
-      <p className="rounded border border-[#5a2a2a] bg-[#2d1b1b] px-3 py-2 text-sm text-[#ff8f8f]">
+      <p className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
         {state.error}
       </p>
     );
   }
   if (state.success) {
     return (
-      <p className="rounded border border-[#2a5a2a] bg-[#1b2d1b] px-3 py-2 text-sm text-[#8fdc8f]">
+      <p className="rounded border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">
         {state.success}
       </p>
     );
@@ -64,7 +64,7 @@ export function ProfileSettingsForm({
           required
           className={inputClass}
         />
-        <p className="text-xs text-[#5a6b7c]">
+        <p className="text-xs text-muted">
           Friends find your dashboard at /u/{username || "username"}.
         </p>
       </div>
@@ -99,7 +99,7 @@ export function ProfileSettingsForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-[#5a6b7c]">
+        <p className="text-xs text-muted">
           Used for last-in-game times and when today rolls into this week.
         </p>
       </div>
@@ -180,7 +180,7 @@ export function SetPasswordPrompt({ email }: { email: string }) {
     <div className="space-y-3">
       <Feedback state={state} />
 
-      <p className="text-sm text-[#8f98a0]">
+      <p className="text-sm text-muted">
         You signed up with Google, so there is no password on this account yet.
         We will email {email} a link so you can set one and sign in either way.
       </p>

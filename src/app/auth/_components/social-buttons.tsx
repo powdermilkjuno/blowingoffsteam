@@ -18,9 +18,9 @@ export function GoogleButton({ label }: { label: string }) {
           callbackURL: "/dashboard",
         });
       }}
-      className="flex w-full items-center justify-center gap-2 rounded border border-[#2a3f5a] bg-[#16202d] px-4 py-2 text-sm text-white hover:border-[#66c0f4] disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-sm border border-line bg-surface px-4 py-2 text-sm text-paper hover:border-fern hover:bg-raised disabled:opacity-60"
     >
-      <span className="grid size-4 place-items-center rounded-full bg-white text-[11px] font-bold text-[#1b2838]">
+      <span className="grid size-4 place-items-center rounded-full bg-paper text-[11px] font-bold text-ink">
         G
       </span>
       {pending ? "Redirecting…" : label}
@@ -53,8 +53,8 @@ export function SteamButton({
           boxed
             ? `flex w-full items-center justify-center rounded border py-3 transition ${
                 pending
-                  ? "pointer-events-none border-[#2a3f5a] bg-[#16202d] opacity-70"
-                  : "border-[#66c0f4] bg-[#16202d] hover:bg-[#1f2d3d]"
+                  ? "pointer-events-none border-line bg-surface opacity-70"
+                  : "border-signal/50 bg-surface hover:border-signal hover:bg-raised"
               }`
             : `inline-flex items-center justify-center ${
                 pending ? "pointer-events-none opacity-70" : ""
@@ -62,8 +62,8 @@ export function SteamButton({
         }
       >
         {pending ? (
-          <span className="flex items-center gap-2 text-sm text-[#c7d5e0]">
-            <span className="size-4 animate-spin rounded-full border-2 border-[#66c0f4] border-t-transparent" />
+          <span className="flex items-center gap-2 text-sm text-muted">
+            <span className="size-4 animate-spin rounded-full border-2 border-signal border-t-transparent" />
             Connecting to Steam…
           </span>
         ) : (
@@ -78,8 +78,18 @@ export function SteamButton({
       </a>
 
       {caption && !pending && (
-        <p className="text-center text-xs text-[#5a6b7c]">{caption}</p>
+        <p className="text-center text-xs text-muted">{caption}</p>
       )}
+    </div>
+  );
+}
+
+export function AuthDivider({ label = "or" }: { label?: string }) {
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted">
+      <span className="h-px flex-1 bg-line" />
+      {label}
+      <span className="h-px flex-1 bg-line" />
     </div>
   );
 }

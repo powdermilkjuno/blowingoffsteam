@@ -3,17 +3,29 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { DashboardGame } from "@/lib/dashboard-data";
-import { formatLastPlayedAt, formatPlaytime } from "@/lib/db/profiles";
+import {
+  formatHeldDay,
+  formatLastPlayedAt,
+  formatPlaytime,
+} from "@/lib/db/profiles";
+import { recencyUnix } from "@/lib/playtime-windows";
 
 const SORT_STORAGE_KEY = "bos_game_sort";
+const COLLAPSED_COUNT = 10;
 
-export type GameSort = "last-played" | "lifetime";
+export type GameSort = "last-played" | "lifetime" | "this-week";
 
 function sortGames(games: DashboardGame[], sort: GameSort): DashboardGame[] {
   return [...games].sort((a, b) => {
     if (sort === "last-played") {
-      const last = (b.lastPlayedAt ?? 0) - (a.lastPlayedAt ?? 0);
+      const last = recencyUnix(b) - recencyUnix(a);
       if (last !== 0) return last;
+      return b.playtimeMinutes - a.playtimeMinutes;
+    }
+    if (sort === "this-week") {
+      const week = b.weekMinutes - a.weekMinutes;
+      if (week !== 0) return week;
+      return b.playtimeMinutes - a.playtimeMinutes;
     }
     return b.playtimeMinutes - a.playtimeMinutes;
   });
@@ -27,10 +39,13 @@ export function GameList({
   displayTimeZone: string;
 }) {
   const [sort, setSort] = useState<GameSort>("last-played");
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(SORT_STORAGE_KEY);
-    if (saved === "last-played" || saved === "lifetime") setSort(saved);
+    if (saved === "last-played" || saved === "lifetime" || saved === "this-week") {
+      setSort(saved);
+    }
   }, []);
 
   function chooseSort(next: GameSort) {
@@ -39,20 +54,26 @@ export function GameList({
   }
 
   const ordered = useMemo(() => sortGames(games, sort), [games, sort]);
+  const visible = expanded ? ordered : ordered.slice(0, COLLAPSED_COUNT);
+  const hiddenCount = ordered.length - COLLAPSED_COUNT;
 
   return (
-    <section className="rounded border border-[#2a3f5a] bg-[#16202d]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2a3f5a] px-5 py-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-[#8f98a0]">
-          Games
-        </h2>
+    <section className="corners overflow-hidden rounded-sm border border-line bg-surface">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-raised/50 px-5 py-3">
+        <h2 className="kicker">Games</h2>
         <div className="flex items-center gap-3">
-          <div className="flex overflow-hidden rounded border border-[#2a3f5a] text-xs">
+          <div className="flex overflow-hidden rounded-sm border border-line text-xs">
             <SortButton
               active={sort === "last-played"}
               onClick={() => chooseSort("last-played")}
             >
               Last played
+            </SortButton>
+            <SortButton
+              active={sort === "this-week"}
+              onClick={() => chooseSort("this-week")}
+            >
+              This week
             </SortButton>
             <SortButton
               active={sort === "lifetime"}
@@ -61,15 +82,15 @@ export function GameList({
               Lifetime
             </SortButton>
           </div>
-          <span className="text-xs text-[#5a6b7c]">{games.length} titles</span>
+          <span className="text-xs text-muted">{games.length} titles</span>
         </div>
       </header>
 
-      <ul className="divide-y divide-[#2a3f5a]">
-        {ordered.map((game) => (
+      <ul className="divide-y divide-line">
+        {visible.map((game) => (
           <li
             key={game.appId}
-            className="flex items-center gap-3 px-5 py-3 text-sm"
+            className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
           >
             {game.iconUrl ? (
               <Image
@@ -77,33 +98,52 @@ export function GameList({
                 alt=""
                 width={32}
                 height={32}
-                className="rounded"
+                className="rounded-sm"
               />
             ) : (
-              <div className="size-8 rounded bg-[#2a3f5a]" />
+              <div className="size-8 rounded-sm bg-raised" />
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-white">{game.name}</p>
-              <p className="text-xs text-[#5a6b7c]">
+              <p className="truncate text-paper">{game.name}</p>
+              <p className="mt-0.5 text-xs text-muted">
                 {formatPlaytime(game.todayMinutes)} today
                 {" · "}
                 {formatPlaytime(game.weekMinutes)} this week
                 {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
                   ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
                   : ""}
-                {game.lastPlayedAt
-                  ? ` · last in-game ${formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}`
-                  : ""}
               </p>
+              {game.lastPlayedAt ? (
+                <p className="mt-0.5 text-xs text-clay2">
+                  Last played{" "}
+                  {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
+                </p>
+              ) : game.lastHeldDay ? (
+                <p className="mt-0.5 text-xs text-clay2">
+                  Played {formatHeldDay(game.lastHeldDay)}
+                </p>
+              ) : null}
             </div>
 
-            <p className="shrink-0 tabular-nums text-[#c7d5e0]">
-              {formatPlaytime(game.playtimeMinutes)}
+            <p className="shrink-0 tabular-nums text-clay">
+              {formatPlaytime(
+                sort === "this-week" ? game.weekMinutes : game.playtimeMinutes
+              )}
             </p>
           </li>
         ))}
       </ul>
+
+      {ordered.length > COLLAPSED_COUNT ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full border-t border-line bg-raised/30 px-5 py-2.5 text-center text-xs text-muted transition-colors hover:bg-raised/60 hover:text-signal"
+        >
+          {expanded ? "Show less" : `Show ${hiddenCount} more`}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -123,8 +163,8 @@ function SortButton({
       onClick={onClick}
       className={
         active
-          ? "bg-[#66c0f4] px-2.5 py-1 font-medium text-[#1b2838]"
-          : "px-2.5 py-1 text-[#8f98a0] hover:bg-[#1b2838] hover:text-white"
+          ? "bg-signal px-2.5 py-1 font-medium text-ink"
+          : "bg-surface px-2.5 py-1 text-paper hover:bg-raised hover:text-signal"
       }
     >
       {children}

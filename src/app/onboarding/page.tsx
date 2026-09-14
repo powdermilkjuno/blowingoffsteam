@@ -17,8 +17,6 @@ export default async function OnboardingPage() {
     if (profile) redirect("/dashboard");
   }
 
-  // Missing ticket means they have not finished Steam yet. Send them there
-  // instead of showing the Steam button a second time.
   if (!ticket) {
     redirect("/auth/steam/login");
   }
@@ -28,7 +26,7 @@ export default async function OnboardingPage() {
       title="Finish setting up"
       subtitle="Steam is connected. Pick a username, then add an email and password so you can sign back in."
     >
-      <div className="flex items-center gap-3 rounded border border-[#2a3f5a] bg-[#16202d] p-3">
+      <div className="flex items-center gap-3 rounded border border-line bg-raised p-3">
         {ticket.avatarUrl && (
           <Image
             src={ticket.avatarUrl}
@@ -39,8 +37,8 @@ export default async function OnboardingPage() {
           />
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm text-white">{ticket.displayName}</p>
-          <p className="text-xs text-[#8f98a0]">Steam connected</p>
+          <p className="truncate text-sm text-paper">{ticket.displayName}</p>
+          <p className="text-xs text-muted">Steam connected</p>
         </div>
       </div>
 

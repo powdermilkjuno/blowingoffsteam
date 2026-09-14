@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,18 +12,50 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+
+const pressStart = Press_Start_2P({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-pixel",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Blowing Off Steam",
-  description: "Personal Steam playtime dashboard",
+  title: "Blowing Off Steam — track your playtime",
+  description:
+    "Track your Steam playtime, see your weekly patterns, and see how you rank against friends.",
 };
+
+const themeInitScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem("bos-theme") || localStorage.getItem("uptime-theme");
+    var theme = stored === "light" || stored === "dark" ? stored : "dark";
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(theme);
+  } catch (err) {}
+})();
+`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${pressStart.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="flex min-h-full flex-col font-mono antialiased">
+        {children}
+      </body>
     </html>
   );
 }
