@@ -6,14 +6,21 @@ import type { DashboardGame } from "@/lib/dashboard-data";
 import { formatLastPlayedAt, formatPlaytime } from "@/lib/db/profiles";
 
 const SORT_STORAGE_KEY = "bos_game_sort";
+const COLLAPSED_COUNT = 10;
 
-export type GameSort = "last-played" | "lifetime";
+export type GameSort = "last-played" | "lifetime" | "this-week";
 
 function sortGames(games: DashboardGame[], sort: GameSort): DashboardGame[] {
   return [...games].sort((a, b) => {
     if (sort === "last-played") {
       const last = (b.lastPlayedAt ?? 0) - (a.lastPlayedAt ?? 0);
       if (last !== 0) return last;
+      return b.playtimeMinutes - a.playtimeMinutes;
+    }
+    if (sort === "this-week") {
+      const week = b.weekMinutes - a.weekMinutes;
+      if (week !== 0) return week;
+      return b.playtimeMinutes - a.playtimeMinutes;
     }
     return b.playtimeMinutes - a.playtimeMinutes;
   });
@@ -27,10 +34,13 @@ export function GameList({
   displayTimeZone: string;
 }) {
   const [sort, setSort] = useState<GameSort>("last-played");
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(SORT_STORAGE_KEY);
-    if (saved === "last-played" || saved === "lifetime") setSort(saved);
+    if (saved === "last-played" || saved === "lifetime" || saved === "this-week") {
+      setSort(saved);
+    }
   }, []);
 
   function chooseSort(next: GameSort) {
@@ -39,6 +49,8 @@ export function GameList({
   }
 
   const ordered = useMemo(() => sortGames(games, sort), [games, sort]);
+  const visible = expanded ? ordered : ordered.slice(0, COLLAPSED_COUNT);
+  const hiddenCount = ordered.length - COLLAPSED_COUNT;
 
   return (
     <section className="corners overflow-hidden rounded-sm border border-line bg-surface">
@@ -53,6 +65,12 @@ export function GameList({
               Last played
             </SortButton>
             <SortButton
+              active={sort === "this-week"}
+              onClick={() => chooseSort("this-week")}
+            >
+              This week
+            </SortButton>
+            <SortButton
               active={sort === "lifetime"}
               onClick={() => chooseSort("lifetime")}
             >
@@ -64,7 +82,7 @@ export function GameList({
       </header>
 
       <ul className="divide-y divide-line">
-        {ordered.map((game) => (
+        {visible.map((game) => (
           <li
             key={game.appId}
             className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
@@ -100,11 +118,23 @@ export function GameList({
             </div>
 
             <p className="shrink-0 tabular-nums text-clay">
-              {formatPlaytime(game.playtimeMinutes)}
+              {formatPlaytime(
+                sort === "this-week" ? game.weekMinutes : game.playtimeMinutes
+              )}
             </p>
           </li>
         ))}
       </ul>
+
+      {ordered.length > COLLAPSED_COUNT ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full border-t border-line bg-raised/30 px-5 py-2.5 text-center text-xs text-muted transition-colors hover:bg-raised/60 hover:text-signal"
+        >
+          {expanded ? "Show less" : `Show ${hiddenCount} more`}
+        </button>
+      ) : null}
     </section>
   );
 }

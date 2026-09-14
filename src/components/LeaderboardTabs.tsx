@@ -39,7 +39,7 @@ export default function LeaderboardTabs({
 
       <div className="scanlines -mx-5 -mb-5 mt-5 border-t border-line bg-raised px-4 pb-5 pt-6">
         <h3 className="text-center font-pixel text-base tracking-wide text-clay">
-          High Scores
+          Leaderboard
         </h3>
 
         <div className="mt-6 flex items-center gap-3 px-4 pb-2 font-pixel text-[10px] tracking-wide text-fern">
