@@ -68,10 +68,10 @@ function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
 function EmptyRow() {
   return (
     <div className="flex items-center gap-3 px-4 py-2 font-pixel text-[11px] tracking-wide text-muted">
-      <span className="w-14 flex-shrink-0">—</span>
-      <span className="h-7 w-7 flex-shrink-0" />
+      <span className="w-14 shrink-0">—</span>
+      <span className="h-7 w-7 shrink-0" />
       <span className="flex-1">—</span>
-      <span className="w-24 flex-shrink-0 text-right">—</span>
+      <span className="w-24 shrink-0 text-right">—</span>
     </div>
   );
 }
