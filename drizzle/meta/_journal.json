@@ -29,6 +29,13 @@
       "when": 1789345516222,
       "tag": "0003_perpetual_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789432000000,
+      "tag": "0004_groups",
+      "breakpoints": true
     }
   ]
 }
