@@ -99,23 +99,15 @@ export function priorUtcWindow(
   return { from, to };
 }
 
-// Last-played in this timezone is the day we can honestly date. Missing
-// last-played goes to yesterday so week/2-week still show something.
+// Steam's 14-day minutes are a lump. rtime_last_played is the last launch,
+// not session start, so dating the lump there makes a 2-minute reopen look
+// like a full week of play. Park it on the first day of that window instead.
 export function steamSeedDay(
   at: Date,
-  lastPlayedAt: number | null,
+  _lastPlayedAt: number | null,
   timeZone?: string | null,
 ): string {
-  const today = dayStringInZone(at, timeZone);
-  const yesterday = addUtcDays(today, -1);
-  const windowStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
-
-  if (lastPlayedAt == null) return yesterday;
-
-  const lastDay = dayStringInZone(new Date(lastPlayedAt * 1000), timeZone);
-  if (lastDay === today) return today;
-  if (lastDay >= windowStart && lastDay < today) return lastDay;
-  return yesterday;
+  return rollingStartDay(dayStringInZone(at, timeZone), PERIOD_DAYS.twoWeeks);
 }
 
 export function computePlaytimeIncrements(

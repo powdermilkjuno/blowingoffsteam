@@ -199,6 +199,25 @@ export async function applyPlaytimeIncrements(input: {
   });
 }
 
+async function daysWithExactMinutes(input: {
+  profileId: string;
+  appId: number;
+  minutes: number;
+}): Promise<string[]> {
+  const rows = await getDb()
+    .select({ day: playtimeDaily.day })
+    .from(playtimeDaily)
+    .where(
+      and(
+        eq(playtimeDaily.profileId, input.profileId),
+        eq(playtimeDaily.appId, input.appId),
+        eq(playtimeDaily.minutes, input.minutes),
+      ),
+    );
+
+  return rows.map((row) => String(row.day).slice(0, 10));
+}
+
 async function reseatSteamSeeds(input: {
   profileId: string;
   games: {
@@ -225,9 +244,14 @@ async function reseatSteamSeeds(input: {
     const utcLastDay = lastPlayed
       ? dayStringInZone(lastPlayed, "UTC")
       : null;
+    const blobDays = await daysWithExactMinutes({
+      profileId: input.profileId,
+      appId: game.appId,
+      minutes: game.playtimeTwoWeeksMinutes,
+    });
     const candidates = [
       ...new Set(
-        [today, yesterday, lastDay, utcLastDay].filter(
+        [...blobDays, today, yesterday, lastDay, utcLastDay].filter(
           (day): day is string => Boolean(day),
         ),
       ),
@@ -242,9 +266,7 @@ async function reseatSteamSeeds(input: {
         toDay: fromDay,
       });
       if (minutes <= 0) continue;
-      const seedBlob = minutes === game.playtimeTwoWeeksMinutes;
-      const tzShift = fromDay === utcLastDay && lastDay === target;
-      if (!seedBlob && !tzShift) continue;
+      if (minutes !== game.playtimeTwoWeeksMinutes) continue;
 
       await shiftDailyMinutes({
         profileId: input.profileId,
@@ -512,11 +534,10 @@ export async function getPlaytimePeriods(
       new Date(`${today}T00:00:00.000Z`),
       sampledFrom,
     ),
-    week: heldOrSteam(
+    week: toPeriod(
       weekMinutes,
       new Date(`${weekStart}T00:00:00.000Z`),
       sampledFrom,
-      live?.twoWeeks,
     ),
     twoWeeks: heldOrSteam(
       twoWeekMinutes,
@@ -524,11 +545,10 @@ export async function getPlaytimePeriods(
       sampledFrom,
       live?.twoWeeks,
     ),
-    month: heldOrSteam(
+    month: toPeriod(
       monthMinutes,
       new Date(`${monthStart}T00:00:00.000Z`),
       sampledFrom,
-      live?.twoWeeks,
     ),
   };
 }
