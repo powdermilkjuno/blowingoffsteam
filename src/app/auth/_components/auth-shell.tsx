@@ -15,6 +15,7 @@ export function AuthShell({
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-6 py-16">
       <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
+      <div className="steam-field -z-10" />
 
       <div className="absolute right-6 top-6">
         <ThemeToggle />
@@ -50,4 +51,4 @@ export const inputClass =
 export const labelClass = "block text-xs text-fern";
 
 export const submitClass =
-  "w-full rounded bg-signal px-4 py-3 text-sm font-medium text-ink hover:bg-signal2 disabled:opacity-60";
+  "w-full rounded-sm bg-signal px-4 py-3 text-sm font-medium text-ink shadow-[inset_0_-2px_0_color-mix(in_srgb,var(--bos-ink)_22%,transparent)] hover:bg-signal2 disabled:opacity-60";

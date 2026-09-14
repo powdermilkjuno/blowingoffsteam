@@ -54,7 +54,9 @@ export default function HighScoreRow({
   return (
     <div
       className={`flex items-center gap-3 px-4 py-2 font-pixel text-[11px] tracking-wide ${
-        isUser ? "text-signal" : "text-paper/90"
+        isUser
+          ? "bg-signal/15 text-signal"
+          : "text-paper hover:bg-surface/80"
       }`}
     >
       <span

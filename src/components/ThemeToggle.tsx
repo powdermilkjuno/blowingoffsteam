@@ -17,7 +17,7 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(next);
     try {
-      localStorage.setItem("uptime-theme", next);
+      localStorage.setItem("bos-theme", next);
     } catch {
       // Theme just will not persist if storage is blocked.
     }

@@ -13,7 +13,8 @@ export default function AppShell({
   wide?: boolean;
 }) {
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-64" />
       <AppHeader active={active} displayName={displayName} />
       <main
         className={`mx-auto w-full space-y-6 px-6 py-10 ${

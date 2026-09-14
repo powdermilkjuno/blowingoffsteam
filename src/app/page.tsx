@@ -35,7 +35,7 @@ const features = [
   },
   {
     title: "Automatic tracking",
-    body: "Connect Steam once. uptime logs every session in the background — nothing to enter, nothing to forget.",
+    body: "Connect Steam once. Blowing Off Steam logs playtime in the background — nothing to enter, nothing to forget.",
     accent: "bg-signal",
   },
   {
@@ -75,20 +75,21 @@ export default async function LandingPage() {
 
       <section className="relative mx-auto max-w-6xl px-6 pb-20 pt-10 md:pt-16">
         <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
+        <div className="steam-field -z-10" />
 
         <div className="grid items-center gap-14 md:grid-cols-2">
           <div className="animate-rise">
-            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-raised/70 px-3 py-1 text-xs text-fern">
-              <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-raised/80 px-3 py-1 text-xs text-fern">
+              <span className="h-1.5 w-1.5 rounded-full bg-clay shadow-[0_0_8px_var(--bos-clay)]" />
               Built for Steam players
             </span>
             <h1 className="mt-5 text-4xl leading-[1.1] tracking-tight text-paper sm:text-5xl">
               Know where your hours go.
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted">
-              uptime tracks your Steam playtime automatically, shows you how
-              your week actually looked, and ranks you against the friends
-              who dare to check.
+              Blowing Off Steam tracks your Steam playtime automatically, shows
+              you how your week actually looked, and ranks you against the
+              friends who dare to check.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <SteamButton boxed={false} />
@@ -107,7 +108,7 @@ export default async function LandingPage() {
           >
             <div className="space-y-1.5 text-sm">
               <p className="text-muted">
-                <span className="text-clay">$</span> uptime status
+                <span className="text-clay">$</span> bos status
               </p>
               <p className="text-paper">
                 tracking: <span className="text-signal">connected</span>
@@ -142,7 +143,7 @@ export default async function LandingPage() {
 
       <section className="mx-auto max-w-6xl border-t border-line px-6 py-16">
         <div className="grid gap-10 md:grid-cols-5">
-          <div className="md:col-span-3">
+          <div className="corners border border-line bg-surface/80 p-6 md:col-span-3">
             <span className={`mb-4 block h-1.5 w-6 ${hero.accent}`} />
             <h3 className="text-lg text-paper">{hero.title}</h3>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted">
@@ -163,9 +164,12 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          <div className="space-y-10 md:col-span-2">
+          <div className="space-y-4 md:col-span-2">
             {rest.map((f) => (
-              <div key={f.title}>
+              <div
+                key={f.title}
+                className="border border-line bg-surface/70 p-5"
+              >
                 <span className={`mb-4 block h-1.5 w-6 ${f.accent}`} />
                 <h3 className="text-base text-paper">{f.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -178,9 +182,9 @@ export default async function LandingPage() {
       </section>
 
       <footer className="mx-auto flex max-w-6xl items-center justify-between border-t border-line px-6 py-8 text-xs text-muted">
-        <span>uptime — not affiliated with Valve or Steam.</span>
-        <Link href="/login" className="hover:text-signal">
-          Log in
+        <span>Blowing Off Steam — not affiliated with Valve or Steam.</span>
+        <Link href={signedIn ? "/dashboard" : "/login"} className="hover:text-signal">
+          {signedIn ? "Dashboard" : "Log in"}
         </Link>
       </footer>
     </div>

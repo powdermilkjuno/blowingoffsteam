@@ -23,7 +23,7 @@ export function AddFriendForm() {
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded bg-signal px-4 py-2 text-sm font-medium text-ink hover:bg-signal2 disabled:opacity-60"
+          className="shrink-0 rounded-sm bg-signal px-4 py-2 text-sm font-medium text-ink hover:bg-signal2 disabled:opacity-60"
         >
           {pending ? "Sending…" : "Send request"}
         </button>

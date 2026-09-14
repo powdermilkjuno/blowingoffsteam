@@ -27,7 +27,7 @@ const pressStart = Press_Start_2P({
 });
 
 export const metadata: Metadata = {
-  title: "uptime — track your playtime",
+  title: "Blowing Off Steam — track your playtime",
   description:
     "Track your Steam playtime, see your weekly patterns, and see how you rank against friends.",
 };
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 const themeInitScript = `
 (function () {
   try {
-    var stored = localStorage.getItem("uptime-theme");
+    var stored = localStorage.getItem("bos-theme") || localStorage.getItem("uptime-theme");
     var theme = stored === "light" || stored === "dark" ? stored : "dark";
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);

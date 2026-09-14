@@ -5,6 +5,7 @@ import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
 import LeaderboardTabs from "@/components/LeaderboardTabs";
+import PageIntro from "@/components/PageIntro";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +20,10 @@ export default async function LeaderboardPage() {
 
   return (
     <AppShell active="leaderboard" displayName={profile.displayName}>
-      <div>
-        <p className="text-sm text-fern">Friends</p>
-        <h1 className="mt-1 text-2xl tracking-tight text-paper">Leaderboard</h1>
-        <p className="mt-2 text-sm text-muted">
-          You and accepted friends. Week and month use held playtime. All time
-          is Steam lifetime.
-        </p>
-      </div>
+      <PageIntro kicker="Friends" title="Leaderboard">
+        You and accepted friends. Week and month use held playtime. All time is
+        Steam lifetime.
+      </PageIntro>
 
       <Card className="corners overflow-hidden p-5" radius="sm">
         <LeaderboardTabs boards={boards} />

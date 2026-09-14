@@ -41,11 +41,11 @@ export function GameList({
   const ordered = useMemo(() => sortGames(games, sort), [games, sort]);
 
   return (
-    <section className="overflow-hidden rounded-md border border-line bg-surface">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
-        <h2 className="text-xs uppercase tracking-wide text-fern">Games</h2>
+    <section className="corners overflow-hidden rounded-sm border border-line bg-surface">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-raised/50 px-5 py-3">
+        <h2 className="kicker">Games</h2>
         <div className="flex items-center gap-3">
-          <div className="flex overflow-hidden rounded border border-line text-xs">
+          <div className="flex overflow-hidden rounded-sm border border-line text-xs">
             <SortButton
               active={sort === "last-played"}
               onClick={() => chooseSort("last-played")}
@@ -75,25 +75,28 @@ export function GameList({
                 alt=""
                 width={32}
                 height={32}
-                className="rounded"
+                className="rounded-sm"
               />
             ) : (
-              <div className="size-8 rounded bg-raised" />
+              <div className="size-8 rounded-sm bg-raised" />
             )}
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-paper">{game.name}</p>
-              <p className="text-xs text-muted">
+              <p className="mt-0.5 text-xs text-muted">
                 {formatPlaytime(game.todayMinutes)} today
                 {" · "}
                 {formatPlaytime(game.weekMinutes)} this week
                 {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
                   ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
                   : ""}
-                {game.lastPlayedAt
-                  ? ` · last in-game ${formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}`
-                  : ""}
               </p>
+              {game.lastPlayedAt ? (
+                <p className="mt-0.5 text-xs text-clay2">
+                  Last played{" "}
+                  {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
+                </p>
+              ) : null}
             </div>
 
             <p className="shrink-0 tabular-nums text-clay">
@@ -122,7 +125,7 @@ function SortButton({
       className={
         active
           ? "bg-signal px-2.5 py-1 font-medium text-ink"
-          : "px-2.5 py-1 text-muted hover:bg-raised hover:text-paper"
+          : "bg-surface px-2.5 py-1 text-paper hover:bg-raised hover:text-signal"
       }
     >
       {children}

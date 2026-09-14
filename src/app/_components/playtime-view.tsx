@@ -3,6 +3,7 @@ import type { DashboardData } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
 import Card from "@/components/Card";
+import PageIntro from "@/components/PageIntro";
 import StatPill from "@/components/StatPill";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
@@ -20,15 +21,9 @@ export function PlaytimeView({
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm text-fern">
-          {viewerIsOwner ? "Welcome back" : "Friend"}
-        </p>
-        <h1 className="mt-1 truncate text-2xl tracking-tight text-paper">
-          {profile.displayName}
-        </h1>
-        <p className="mt-1 text-sm text-muted">@{profile.username}</p>
-      </div>
+      <PageIntro kicker={viewerIsOwner ? "Welcome back" : "Friend"} title={profile.displayName}>
+        @{profile.username}
+      </PageIntro>
 
       <Card className="corners p-6" radius="lg">
         <div className="flex items-start gap-4">

@@ -17,19 +17,19 @@ export default function AppHeader({
   displayName?: string;
 }) {
   return (
-    <header className="hairline border-b border-line bg-bg/80 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-8">
+    <header className="hairline border-b border-line bg-bg/85 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+        <div className="flex min-w-0 items-center gap-6">
           <Logo />
           <nav className="flex items-center gap-1 overflow-x-auto">
             {links.map((link) => (
               <Link
                 key={link.key}
                 href={link.href}
-                className={`rounded px-3 py-1.5 text-sm transition-colors ${
+                className={`rounded-sm px-3 py-1.5 text-sm transition-colors ${
                   active === link.key
-                    ? "bg-raised text-signal"
-                    : "text-muted hover:text-paper"
+                    ? "bg-signal text-ink"
+                    : "text-paper hover:bg-raised hover:text-signal"
                 }`}
               >
                 {link.label}
@@ -38,7 +38,7 @@ export default function AppHeader({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {displayName ? (
             <span className="hidden max-w-32 truncate text-xs text-muted sm:inline">
               {displayName}
@@ -48,9 +48,9 @@ export default function AppHeader({
           <Link
             href="/settings"
             aria-label="Settings"
-            className={`flex h-9 w-9 items-center justify-center rounded border transition-colors ${
+            className={`flex h-9 w-9 items-center justify-center rounded-sm border transition-colors ${
               active === "settings"
-                ? "border-signal text-signal"
+                ? "border-signal bg-signal text-ink"
                 : "border-line text-fern hover:border-fern hover:text-signal"
             }`}
           >
@@ -71,7 +71,7 @@ export default function AppHeader({
           <form action={signOutAction}>
             <button
               type="submit"
-              className="rounded border border-line px-3 py-1.5 text-xs text-fern hover:border-fern hover:text-signal"
+              className="rounded-sm border border-line px-3 py-1.5 text-xs text-paper hover:border-fern hover:text-signal"
             >
               Sign out
             </button>

@@ -18,7 +18,7 @@ export function GoogleButton({ label }: { label: string }) {
           callbackURL: "/dashboard",
         });
       }}
-      className="flex w-full items-center justify-center gap-2 rounded border border-line bg-surface px-4 py-2 text-sm text-paper hover:border-fern disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2 rounded-sm border border-line bg-surface px-4 py-2 text-sm text-paper hover:border-fern hover:bg-raised disabled:opacity-60"
     >
       <span className="grid size-4 place-items-center rounded-full bg-paper text-[11px] font-bold text-ink">
         G

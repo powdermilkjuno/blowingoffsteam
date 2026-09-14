@@ -10,6 +10,7 @@ import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
+import PageIntro from "@/components/PageIntro";
 import {
   acceptRequestAction,
   removeFriendAction,
@@ -34,12 +35,11 @@ export default async function FriendsPage() {
 
   return (
     <AppShell active="friends" displayName={profile.displayName}>
-      <div>
-        <p className="text-sm text-fern">People</p>
-        <h1 className="mt-1 text-2xl tracking-tight text-paper">Friends</h1>
-      </div>
+      <PageIntro kicker="People" title="Friends">
+        Swap codes, accept invites, then compare libraries.
+      </PageIntro>
 
-      <Card className="space-y-3 p-6">
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Your friend code</h2>
         <div className="flex items-center gap-3">
           <code className="rounded border border-line bg-raised px-4 py-2 text-lg tracking-[0.3em] text-paper">
@@ -60,13 +60,13 @@ export default async function FriendsPage() {
         </p>
       </Card>
 
-      <Card className="space-y-3 p-6">
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Add a friend</h2>
         <AddFriendForm />
       </Card>
 
       {incoming.length > 0 && (
-        <Card className="space-y-3 p-6">
+        <Card className="corners space-y-3 p-6">
           <h2 className="text-sm text-paper">Invites ({incoming.length})</h2>
           <ul className="divide-y divide-line">
             {incoming.map(({ profile: sender }) => (
@@ -106,7 +106,7 @@ export default async function FriendsPage() {
       )}
 
       {outgoing.length > 0 && (
-        <Card className="space-y-3 p-6">
+        <Card className="corners space-y-3 p-6">
           <h2 className="text-sm text-paper">
             Sent requests ({outgoing.length})
           </h2>
@@ -141,7 +141,7 @@ export default async function FriendsPage() {
         </Card>
       )}
 
-      <Card className="space-y-3 p-6">
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Friends ({friends.length})</h2>
         {friends.length === 0 ? (
           <p className="text-sm text-muted">
