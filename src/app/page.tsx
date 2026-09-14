@@ -6,6 +6,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { auth } from "@/lib/auth/server";
 import { SteamButton } from "./auth/_components/social-buttons";
 
+export const dynamic = "force-dynamic";
+
 const leaderboard = [
   { rank: "1ST", name: "kingofthepirates99", hours: "2.5h" },
   { rank: "2ND", name: "sunmoonstars", hours: "6.3h" },
