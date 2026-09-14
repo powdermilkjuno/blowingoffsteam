@@ -99,15 +99,23 @@ export function priorUtcWindow(
   return { from, to };
 }
 
-// Steam's 14-day minutes are a lump. rtime_last_played is the last launch,
-// not session start, so dating the lump there makes a 2-minute reopen look
-// like a full week of play. Park it on the first day of that window instead.
+// Steam's 14-day minutes are a lump. When Steam gives a real
+// rtime_last_played inside that window, that is the day we can date.
+// Missing or out-of-window last-played stays on the window start so a
+// fabricated "pulled just now" stamp cannot dump the lump onto today.
 export function steamSeedDay(
   at: Date,
-  _lastPlayedAt: number | null,
+  lastPlayedAt: number | null,
   timeZone?: string | null,
 ): string {
-  return rollingStartDay(dayStringInZone(at, timeZone), PERIOD_DAYS.twoWeeks);
+  const today = dayStringInZone(at, timeZone);
+  const windowStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
+
+  if (lastPlayedAt == null) return windowStart;
+
+  const lastDay = dayStringInZone(new Date(lastPlayedAt * 1000), timeZone);
+  if (lastDay >= windowStart && lastDay <= today) return lastDay;
+  return windowStart;
 }
 
 export function computePlaytimeIncrements(
