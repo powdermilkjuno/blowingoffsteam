@@ -166,23 +166,18 @@ export async function fetchPlaytime(steamId: string): Promise<Playtime> {
   const rawRecent = Array.isArray(recent?.response?.games)
     ? recent.response.games
     : [];
-  const now = Math.floor(Date.now() / 1000);
-
-  rawRecent.forEach((raw, index) => {
+  for (const raw of rawRecent) {
     const game = mapSteamGame(raw);
-    if (!game) return;
+    if (!game) continue;
 
     const existing = byAppId.get(game.appId);
     if (!existing) {
-      if (!game.lastPlayedAt) game.lastPlayedAt = now - index;
       byAppId.set(game.appId, game);
-      return;
+      continue;
     }
 
-    const merged = mergeSteamGame(existing, game);
-    if (!merged.lastPlayedAt) merged.lastPlayedAt = now - index;
-    byAppId.set(game.appId, merged);
-  });
+    byAppId.set(game.appId, mergeSteamGame(existing, game));
+  }
 
   const games = [...byAppId.values()]
     .filter(
