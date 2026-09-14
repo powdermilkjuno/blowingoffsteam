@@ -11,15 +11,19 @@ export default function TerminalWindow({
 }) {
   return (
     <div
-      className={`overflow-hidden rounded-md border border-line bg-surface ${className}`}
+      className={`corners scanlines overflow-hidden rounded-sm border border-line bg-surface shadow-[0_20px_50px_color-mix(in_srgb,var(--bos-ink)_35%,transparent)] ${className}`}
     >
-      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
-        <span className="h-2 w-2 rounded-full bg-moss" />
-        <span className="h-2 w-2 rounded-full bg-moss" />
-        <span className="h-2 w-2 rounded-full bg-moss" />
-        {title ? <span className="ml-2 text-xs text-muted">{title}</span> : null}
+      <div className="flex items-center gap-2 border-b border-line bg-raised/80 px-4 py-2.5">
+        <span className="h-2 w-2 rounded-full bg-clay" />
+        <span className="h-2 w-2 rounded-full bg-signal" />
+        <span className="h-2 w-2 rounded-full bg-fern" />
+        {title ? (
+          <span className="ml-2 font-pixel text-[9px] tracking-widest text-muted">
+            {title}
+          </span>
+        ) : null}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="relative p-5">{children}</div>
     </div>
   );
 }

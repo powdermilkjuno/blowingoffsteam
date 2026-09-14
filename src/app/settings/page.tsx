@@ -5,6 +5,7 @@ import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import { listTimeZones } from "@/lib/playtime-windows";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
+import PageIntro from "@/components/PageIntro";
 import {
   ChangePasswordForm,
   ProfileSettingsForm,
@@ -24,10 +25,9 @@ export default async function SettingsPage() {
 
   return (
     <AppShell active="settings" displayName={profile.displayName}>
-      <div>
-        <p className="text-sm text-fern">Account</p>
-        <h1 className="mt-1 text-2xl tracking-tight text-paper">Settings</h1>
-      </div>
+      <PageIntro kicker="Account" title="Settings">
+        Handle, timezone, and how you get back in.
+      </PageIntro>
 
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Profile</h2>
@@ -39,7 +39,7 @@ export default async function SettingsPage() {
         />
       </Card>
 
-      <Card className="space-y-3 p-6">
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">
           {hasPassword ? "Password" : "Set a password"}
         </h2>
@@ -50,7 +50,7 @@ export default async function SettingsPage() {
         )}
       </Card>
 
-      <Card className="space-y-3 p-6">
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Sign-in methods</h2>
         <ul className="space-y-2 text-sm">
           <li className="flex justify-between">

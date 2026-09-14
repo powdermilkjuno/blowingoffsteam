@@ -28,8 +28,8 @@ export default function LeaderboardTabs({
             onClick={() => setPeriod(t.key)}
             className={`rounded px-3 py-1.5 text-sm transition-colors ${
               period === t.key
-                ? "bg-raised text-signal"
-                : "text-muted hover:text-paper"
+                ? "bg-signal text-ink"
+                : "text-paper hover:bg-raised hover:text-signal"
             }`}
           >
             {t.label}
@@ -37,7 +37,7 @@ export default function LeaderboardTabs({
         ))}
       </div>
 
-      <div className="-mx-5 -mb-5 mt-5 border-t border-line bg-raised px-4 pb-5 pt-6">
+      <div className="scanlines -mx-5 -mb-5 mt-5 border-t border-line bg-raised px-4 pb-5 pt-6">
         <h3 className="text-center font-pixel text-base tracking-wide text-clay">
           High Scores
         </h3>

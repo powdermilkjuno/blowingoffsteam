@@ -10,7 +10,7 @@ const tones = {
 
 const radii = {
   none: "rounded-none",
-  sm: "rounded",
+  sm: "rounded-sm",
   md: "rounded-md",
   lg: "rounded-lg",
 } as const;
