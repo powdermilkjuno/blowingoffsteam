@@ -21,6 +21,7 @@ export const profiles = pgTable("profiles", {
   displayName: text("display_name").notNull(),
   avatarUrl: text("avatar_url").notNull().default(""),
   friendCode: text("friend_code").notNull().unique(),
+  timeZone: text("time_zone").notNull().default("UTC"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

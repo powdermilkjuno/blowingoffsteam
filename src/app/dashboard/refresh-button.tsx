@@ -1,9 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { formatClockAt } from "@/lib/db/profiles";
 import { refreshPlaytimeAction, type RefreshState } from "./actions";
 
-export function RefreshPlaytimeButton({ lastSyncedAt }: { lastSyncedAt: Date }) {
+export function RefreshPlaytimeButton({
+  lastSyncedAt,
+  timeZone,
+}: {
+  lastSyncedAt: Date;
+  timeZone: string;
+}) {
   const [state, action, pending] = useActionState<RefreshState, FormData>(
     refreshPlaytimeAction,
     {},
@@ -19,7 +26,7 @@ export function RefreshPlaytimeButton({ lastSyncedAt }: { lastSyncedAt: Date }) 
         {pending ? "Refreshing…" : "Refresh times"}
       </button>
       <p className="text-[11px] text-[#5a6b7c]">
-        Last pulled {lastSyncedAt.toISOString().slice(11, 16)} UTC
+        Last pulled {formatClockAt(lastSyncedAt, timeZone)}
       </p>
       {state.error && <p className="text-[11px] text-[#ff8f8f]">{state.error}</p>}
       {state.success && (

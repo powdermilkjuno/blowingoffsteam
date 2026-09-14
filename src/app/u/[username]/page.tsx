@@ -49,7 +49,9 @@ export default async function FriendProfilePage({
     );
   }
 
-  const data = await loadDashboard(target);
+  const data = await loadDashboard(target, {
+    displayTimeZone: viewer.timeZone,
+  });
 
   return (
     <div className="flex flex-1 flex-col bg-[#1b2838] font-sans text-[#c7d5e0]">

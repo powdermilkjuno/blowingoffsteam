@@ -1,4 +1,5 @@
 export const ACCOUNT_APP_ID = 0;
+export const DEFAULT_TIME_ZONE = "UTC";
 
 export const PERIOD_DAYS = {
   today: 1,
@@ -7,14 +8,59 @@ export const PERIOD_DAYS = {
   month: 28,
 } as const;
 
+export function isValidTimeZone(timeZone: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function resolveTimeZone(timeZone?: string | null): string {
+  if (timeZone && isValidTimeZone(timeZone)) return timeZone;
+  return DEFAULT_TIME_ZONE;
+}
+
+export function listTimeZones(): string[] {
+  const all =
+    typeof Intl.supportedValuesOf === "function"
+      ? Intl.supportedValuesOf("timeZone")
+      : [DEFAULT_TIME_ZONE];
+  const preferred = [
+    "UTC",
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Sao_Paulo",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Asia/Tokyo",
+    "Asia/Shanghai",
+    "Australia/Sydney",
+  ].filter((zone) => all.includes(zone));
+  return [...preferred, ...all.filter((zone) => !preferred.includes(zone))];
+}
+
 export function startOfUtcDay(at: Date): Date {
   return new Date(
     Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()),
   );
 }
 
+export function dayStringInZone(at: Date, timeZone?: string | null): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: resolveTimeZone(timeZone),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
 export function utcDayString(at: Date): string {
-  return startOfUtcDay(at).toISOString().slice(0, 10);
+  return dayStringInZone(at, DEFAULT_TIME_ZONE);
 }
 
 export function addUtcDays(day: string, days: number): string {
@@ -29,6 +75,18 @@ export function rollingWindowStart(at: Date, dayCount: number): Date {
   return start;
 }
 
+export function priorDayWindow(
+  today: string,
+  dayCount: number,
+): { from: string; to: string } {
+  const to = addUtcDays(today, -1);
+  return { from: addUtcDays(to, -(dayCount - 1)), to };
+}
+
+export function rollingStartDay(today: string, dayCount: number): string {
+  return addUtcDays(today, -(dayCount - 1));
+}
+
 // Closed days only: yesterday back `dayCount` days. Today is never included.
 export function priorUtcWindow(
   at: Date,
@@ -41,34 +99,53 @@ export function priorUtcWindow(
   return { from, to };
 }
 
-// Steam's 14-day total is never "played today" — last-played is only a
-// launch time. Brand-new accounts need this on a closed day so this week
-// and last 2 weeks show something on first sync.
+// Last-played in this timezone is the day we can honestly date. Missing
+// last-played goes to yesterday so week/2-week still show something.
 export function steamSeedDay(
   at: Date,
   lastPlayedAt: number | null,
+  timeZone?: string | null,
 ): string {
-  const today = utcDayString(at);
-  const yesterday = utcDayString(priorUtcWindow(at, 1).to);
-  const windowStart = utcDayString(rollingWindowStart(at, PERIOD_DAYS.twoWeeks));
+  const today = dayStringInZone(at, timeZone);
+  const yesterday = addUtcDays(today, -1);
+  const windowStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
 
   if (lastPlayedAt == null) return yesterday;
 
-  const lastDay = utcDayString(new Date(lastPlayedAt * 1000));
+  const lastDay = dayStringInZone(new Date(lastPlayedAt * 1000), timeZone);
+  if (lastDay === today) return today;
   if (lastDay >= windowStart && lastDay < today) return lastDay;
   return yesterday;
 }
 
 export function computePlaytimeIncrements(
   previousForever: Map<number, number>,
-  games: { appId: number; playtimeMinutes: number }[],
+  games: {
+    appId: number;
+    playtimeMinutes: number;
+    playtimeTwoWeeksMinutes?: number;
+    lastPlayedAt?: number | null;
+  }[],
+  opts?: { today: string; timeZone?: string | null },
 ): { appId: number; minutes: number }[] {
   if (previousForever.size === 0) return [];
 
   const increments: { appId: number; minutes: number }[] = [];
   for (const game of games) {
     const prev = previousForever.get(game.appId);
-    if (prev === undefined) continue;
+    if (prev === undefined) {
+      const twoWeeks = game.playtimeTwoWeeksMinutes ?? 0;
+      if (
+        opts &&
+        twoWeeks > 0 &&
+        game.lastPlayedAt != null &&
+        dayStringInZone(new Date(game.lastPlayedAt * 1000), opts.timeZone) ===
+          opts.today
+      ) {
+        increments.push({ appId: game.appId, minutes: twoWeeks });
+      }
+      continue;
+    }
     const delta = Math.max(0, game.playtimeMinutes - prev);
     if (delta > 0) increments.push({ appId: game.appId, minutes: delta });
   }

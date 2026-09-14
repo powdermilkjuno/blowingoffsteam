@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { DashboardData } from "@/lib/dashboard-data";
-import { formatPlaytime } from "@/lib/db/profiles";
+import { formatLastPlayedAt, formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 
@@ -12,7 +12,7 @@ export function PlaytimeView({
   data: DashboardData;
   viewerIsOwner: boolean;
 }) {
-  const { profile, steam, games, periods } = data;
+  const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
 
   return (
@@ -61,7 +61,10 @@ export function PlaytimeView({
               <p className="text-[11px] text-[#5a6b7c]">from Steam</p>
             </div>
             {viewerIsOwner && (
-              <RefreshPlaytimeButton lastSyncedAt={steam.syncedAt} />
+              <RefreshPlaytimeButton
+                lastSyncedAt={steam.syncedAt}
+                timeZone={displayTimeZone}
+              />
             )}
           </div>
         )}
@@ -81,7 +84,9 @@ export function PlaytimeView({
           Lifetime still comes from Steam. On first link we copy Steam&apos;s
           last 14 days onto this week / last 2 weeks / this month — never onto
           today. Today only grows from later refreshes. This week is the
-          previous 7 UTC days. At midnight, today clears into this week.
+          last 7 days, including today. At midnight in{" "}
+          {displayTimeZone.replaceAll("_", " ")}, today resets and those minutes
+          stay in this week.
           Tracking started{" "}
           {periods.sampledFrom
             ? periods.sampledFrom.toISOString().slice(0, 10)
@@ -166,7 +171,7 @@ export function PlaytimeView({
                       ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
                       : ""}
                     {game.lastPlayedAt
-                      ? ` · last launched ${new Date(game.lastPlayedAt * 1000).toISOString().slice(0, 10)}`
+                      ? ` · last in-game ${formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}`
                       : ""}
                   </p>
                 </div>
@@ -204,9 +209,9 @@ function SteamStat({
 function periodNote(label: string, delta: PeriodDelta): string {
   const window =
     label === "Today"
-      ? "today, UTC"
+      ? "today"
       : label === "This week"
-        ? "previous 7 days"
+        ? "last 7 days"
         : label === "This month"
           ? "last 4 weeks"
           : "last 14 days";

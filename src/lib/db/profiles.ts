@@ -2,6 +2,7 @@ import { randomInt } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import type { GamePlaytime, Playtime } from "../steam-api";
 import { steamGameIconUrl } from "../steam-api";
+import { resolveTimeZone } from "../playtime-windows";
 import {
   applyPlaytimeIncrements,
   backfillDailyFromSnapshots,
@@ -35,6 +36,7 @@ export type Profile = {
   displayName: string;
   avatarUrl: string;
   friendCode: string;
+  timeZone: string;
 };
 
 export type SteamLink = {
@@ -51,6 +53,34 @@ export function formatPlaytime(minutes: number): string {
   if (hours === 0) return `${mins}m`;
   if (mins === 0) return `${hours.toLocaleString()}h`;
   return `${hours.toLocaleString()}h ${mins}m`;
+}
+
+export function formatLastPlayedAt(
+  unixSeconds: number,
+  timeZone?: string | null,
+): string {
+  return formatDateTimeAt(new Date(unixSeconds * 1000), timeZone);
+}
+
+export function formatDateTimeAt(at: Date, timeZone?: string | null): string {
+  return at.toLocaleString("en-US", {
+    timeZone: resolveTimeZone(timeZone),
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+export function formatClockAt(at: Date, timeZone?: string | null): string {
+  return at.toLocaleTimeString("en-US", {
+    timeZone: resolveTimeZone(timeZone),
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 export function generateFriendCode(): string {
@@ -120,13 +150,14 @@ export async function isUsernameTaken(
 
 export async function updateProfile(
   profileId: string,
-  input: { username: string; displayName: string },
+  input: { username: string; displayName: string; timeZone: string },
 ): Promise<Profile> {
   const [row] = await getDb()
     .update(profiles)
     .set({
       username: normalizeUsername(input.username),
       displayName: input.displayName,
+      timeZone: input.timeZone,
     })
     .where(eq(profiles.id, profileId))
     .returning();
@@ -298,6 +329,12 @@ export async function saveSteamPlaytime(input: {
     await db.insert(gamePlaytime).values(rows.slice(i, i + chunkSize));
   }
 
+  const [owner] = await db
+    .select({ timeZone: profiles.timeZone })
+    .from(profiles)
+    .where(eq(profiles.id, input.profileId))
+    .limit(1);
+
   // Library forever is the new baseline. Any increase since the last sync is
   // added to today's held bucket — cron and the refresh button share this path.
   await applyPlaytimeIncrements({
@@ -305,6 +342,7 @@ export async function saveSteamPlaytime(input: {
     previousForever,
     playtime: input.playtime,
     at: syncedAt,
+    timeZone: owner?.timeZone,
   });
 
   await recordPlaytimeSnapshot({

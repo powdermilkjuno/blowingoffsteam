@@ -6,8 +6,9 @@ import {
   computePlaytimeIncrements,
   dailyDiffsFromClosings,
   PERIOD_DAYS,
-  priorUtcWindow,
-  rollingWindowStart,
+  dayStringInZone,
+  resolveTimeZone,
+  rollingStartDay,
   steamSeedDay,
   utcDayString,
 } from "../playtime-windows";
@@ -126,11 +127,12 @@ async function shiftDailyMinutes(input: {
 export async function ensureTodayRow(
   profileId: string,
   at: Date = new Date(),
+  timeZone?: string | null,
 ): Promise<void> {
   await incrementDailyMinutes({
     profileId,
     appId: ACCOUNT_APP_ID,
-    day: utcDayString(at),
+    day: dayStringInZone(at, timeZone),
     minutes: 0,
   });
 }
@@ -159,14 +161,17 @@ export async function applyPlaytimeIncrements(input: {
   previousForever: Map<number, number>;
   playtime: Playtime;
   at?: Date;
+  timeZone?: string | null;
 }): Promise<void> {
   if (!input.playtime.isPublic) return;
 
   const at = input.at ?? new Date();
-  const day = utcDayString(at);
+  const timeZone = resolveTimeZone(input.timeZone);
+  const day = dayStringInZone(at, timeZone);
   const increments = computePlaytimeIncrements(
     input.previousForever,
     input.playtime.games,
+    { today: day, timeZone },
   );
   const accountDelta = increments.reduce((sum, row) => sum + row.minutes, 0);
 
@@ -190,10 +195,11 @@ export async function applyPlaytimeIncrements(input: {
     profileId: input.profileId,
     games: input.playtime.games,
     at,
+    timeZone,
   });
 }
 
-async function repairTodaySteamSeeds(input: {
+async function reseatSteamSeeds(input: {
   profileId: string;
   games: {
     appId: number;
@@ -201,41 +207,51 @@ async function repairTodaySteamSeeds(input: {
     lastPlayedAt: number | null;
   }[];
   at: Date;
+  timeZone?: string | null;
 }): Promise<void> {
-  const today = utcDayString(input.at);
+  const today = dayStringInZone(input.at, input.timeZone);
+  const yesterday = addUtcDays(today, -1);
 
   for (const game of input.games) {
     if (game.playtimeTwoWeeksMinutes <= 0) continue;
 
-    const target = steamSeedDay(input.at, game.lastPlayedAt);
-    if (target === today) continue;
+    const target = steamSeedDay(input.at, game.lastPlayedAt, input.timeZone);
+    const lastDay =
+      game.lastPlayedAt != null
+        ? dayStringInZone(new Date(game.lastPlayedAt * 1000), input.timeZone)
+        : null;
+    const candidates = [
+      ...new Set(
+        [today, yesterday, lastDay].filter((day): day is string => Boolean(day)),
+      ),
+    ];
 
-    const todayMinutes = await sumDailyMinutes({
-      profileId: input.profileId,
-      appId: game.appId,
-      fromDay: today,
-      toDay: today,
-    });
-    if (todayMinutes <= 0) continue;
+    for (const fromDay of candidates) {
+      if (fromDay === target) continue;
+      const minutes = await sumDailyMinutes({
+        profileId: input.profileId,
+        appId: game.appId,
+        fromDay,
+        toDay: fromDay,
+      });
+      if (minutes !== game.playtimeTwoWeeksMinutes || minutes <= 0) continue;
 
-    // Seed copied the whole Steam 14-day number onto today. Real today
-    // play comes from forever-deltas and will not match that number.
-    if (todayMinutes !== game.playtimeTwoWeeksMinutes) continue;
-
-    await shiftDailyMinutes({
-      profileId: input.profileId,
-      appId: game.appId,
-      fromDay: today,
-      toDay: target,
-      minutes: todayMinutes,
-    });
-    await shiftDailyMinutes({
-      profileId: input.profileId,
-      appId: ACCOUNT_APP_ID,
-      fromDay: today,
-      toDay: target,
-      minutes: todayMinutes,
-    });
+      await shiftDailyMinutes({
+        profileId: input.profileId,
+        appId: game.appId,
+        fromDay,
+        toDay: target,
+        minutes,
+      });
+      await shiftDailyMinutes({
+        profileId: input.profileId,
+        appId: ACCOUNT_APP_ID,
+        fromDay,
+        toDay: target,
+        minutes,
+      });
+      break;
+    }
   }
 }
 
@@ -250,15 +266,17 @@ export async function seedMissingDailyFromSteamWindow(input: {
     lastPlayedAt: number | null;
   }[];
   at?: Date;
+  timeZone?: string | null;
 }): Promise<void> {
   const at = input.at ?? new Date();
-  await repairTodaySteamSeeds({ ...input, at });
+  const timeZone = resolveTimeZone(input.timeZone);
+  await reseatSteamSeeds({ ...input, at, timeZone });
 
   for (const game of input.games) {
     if (game.playtimeTwoWeeksMinutes <= 0) continue;
     if (await hasPositiveDaily(input.profileId, game.appId)) continue;
 
-    const day = steamSeedDay(at, game.lastPlayedAt);
+    const day = steamSeedDay(at, game.lastPlayedAt, timeZone);
     await incrementDailyMinutes({
       profileId: input.profileId,
       appId: game.appId,
@@ -435,22 +453,22 @@ function heldOrSteam(
 export async function getPlaytimePeriods(
   profileId: string,
   at: Date = new Date(),
-  live?: { twoWeeks?: number },
+  live?: { twoWeeks?: number; timeZone?: string | null },
 ): Promise<PlaytimePeriods> {
+  const timeZone = resolveTimeZone(live?.timeZone);
   await backfillDailyFromSnapshots(profileId);
-  await ensureTodayRow(profileId, at);
+  await ensureTodayRow(profileId, at, timeZone);
 
-  const today = utcDayString(at);
+  const today = dayStringInZone(at, timeZone);
   const sampledDay = await firstDailyDay(profileId);
   const sampledFrom = sampledDay
     ? new Date(`${sampledDay}T00:00:00.000Z`)
     : null;
   const snapshotCount = await trackedDayCount(profileId);
 
-  const weekWindow = priorUtcWindow(at, PERIOD_DAYS.week);
-  const monthWindow = priorUtcWindow(at, PERIOD_DAYS.month);
-  const twoWeeksStart = rollingWindowStart(at, PERIOD_DAYS.twoWeeks);
-  const todayStart = rollingWindowStart(at, PERIOD_DAYS.today);
+  const weekStart = rollingStartDay(today, PERIOD_DAYS.week);
+  const monthStart = rollingStartDay(today, PERIOD_DAYS.month);
+  const twoWeeksStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
 
   const [todayMinutes, weekMinutes, twoWeekMinutes, monthMinutes] =
     await Promise.all([
@@ -461,40 +479,44 @@ export async function getPlaytimePeriods(
       }),
       sumDailyMinutes({
         profileId,
-        fromDay: utcDayString(weekWindow.from),
-        toDay: utcDayString(weekWindow.to),
-      }),
-      sumDailyMinutes({
-        profileId,
-        fromDay: utcDayString(twoWeeksStart),
+        fromDay: weekStart,
         toDay: today,
       }),
       sumDailyMinutes({
         profileId,
-        fromDay: utcDayString(monthWindow.from),
-        toDay: utcDayString(monthWindow.to),
+        fromDay: twoWeeksStart,
+        toDay: today,
+      }),
+      sumDailyMinutes({
+        profileId,
+        fromDay: monthStart,
+        toDay: today,
       }),
     ]);
 
   return {
     sampledFrom,
     snapshotCount,
-    today: toPeriod(todayMinutes, todayStart, sampledFrom),
+    today: toPeriod(
+      todayMinutes,
+      new Date(`${today}T00:00:00.000Z`),
+      sampledFrom,
+    ),
     week: heldOrSteam(
       weekMinutes,
-      weekWindow.from,
+      new Date(`${weekStart}T00:00:00.000Z`),
       sampledFrom,
       live?.twoWeeks,
     ),
     twoWeeks: heldOrSteam(
       twoWeekMinutes,
-      twoWeeksStart,
+      new Date(`${twoWeeksStart}T00:00:00.000Z`),
       sampledFrom,
       live?.twoWeeks,
     ),
     month: heldOrSteam(
       monthMinutes,
-      monthWindow.from,
+      new Date(`${monthStart}T00:00:00.000Z`),
       sampledFrom,
       live?.twoWeeks,
     ),
@@ -515,4 +537,4 @@ export async function getGamePeriodMinutes(
   });
 }
 
-export { addUtcDays, rollingWindowStart, utcDayString };
+export { addUtcDays, utcDayString };
