@@ -50,5 +50,13 @@ export default function MiniLeaderboard({
 }
 
 function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
-  return <HighScoreRow rank={rank} name={row.name} hours={row.hours} isUser={row.isUser} />;
+  return (
+    <HighScoreRow
+      rank={rank}
+      name={row.name}
+      hours={row.hours}
+      avatarUrl={row.avatarUrl}
+      isUser={row.isUser}
+    />
+  );
 }
