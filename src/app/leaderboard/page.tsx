@@ -20,8 +20,7 @@ export default async function LeaderboardPage() {
 
   return (
     <AppShell active="leaderboard" displayName={profile.displayName}>
-      <PageIntro  title="Leaderboard">
-      </PageIntro>
+      <PageIntro kicker="This week" title="Leaderboard" />
 
       <Card className="corners overflow-hidden p-5" radius="sm">
         <LeaderboardTabs boards={boards} />

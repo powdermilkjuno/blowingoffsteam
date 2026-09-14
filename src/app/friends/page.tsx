@@ -71,8 +71,7 @@ export default async function FriendsPage() {
 
   return (
     <AppShell active="friends" displayName={profile.displayName}>
-      <PageIntro  title="Friends">
-      </PageIntro>
+      <PageIntro kicker="Compare" title="Friends" />
 
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Your friend code</h2>

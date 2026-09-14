@@ -18,6 +18,7 @@ export default async function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
+      subtitle="Steam is the fastest path. Email works too."
     >
       <SteamButton caption="Sign up through Steam. Official button, official OpenID." />
       <AuthDivider label="or email" />
