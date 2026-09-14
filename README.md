@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# uptime — frontend
 
-## Getting Started
+A Steam playtime tracker & friends leaderboard. Next.js (App Router) +
+Tailwind CSS + Recharts, styled with a Game Boy–inspired green-on-black
+palette and a monospace typeface throughout.
 
-First, run the development server:
+## Pages
+
+| Route            | Description                                               |
+|-------------------|-------------------------------------------------------------|
+| `/`               | Landing page                                               |
+| `/login`          | Log in with username + password, link to sign up           |
+| `/signup`         | Create account: username, email, password                  |
+| `/onboarding`     | Connect Steam account step after signup                    |
+| `/dashboard`      | Playtime stats + weekly chart (left), leaderboard (right)  |
+| `/settings`       | Profile, password, connected accounts, notifications       |
+| `/leaderboard`    | Full leaderboard with week / month / all-time tabs          |
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/                 routes (App Router)
+components/           shared UI: Button, Card, Field, Logo, AppHeader,
+                       PlaytimeChart, LeaderboardRow, LeaderboardTabs, Toggle
+tailwind.config.js    color tokens + font mapping
+app/globals.css       base styles, scrollbar, background grid
+```
 
-## Learn More
+## Design tokens
 
-To learn more about Next.js, take a look at the following resources:
+Colors are defined as CSS variables in `app/globals.css` (dark theme on `:root`/`html.dark`, light theme on `html.light`) and mapped into Tailwind in `tailwind.config.js`, so every `bg-signal`, `text-clay`, etc. class automatically adapts to the active theme:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `bg` — page background
+- `surface` — card background
+- `raised` — hover / active surface
+- `line` — borders & dividers
+- `moss` / `fern` — secondary greens (icons, secondary text)
+- `signal` / `signal2` — primary accent (grass/sage green) + hover state
+- `clay` / `clay2` — secondary accent (terracotta) + hover state
+- `paper` — primary text
+- `muted` — secondary text
+- `danger` — rust red
+- `ink` — a fixed dark "screen" color that does **not** switch with theme, used for the arcade-style leaderboard panels and button text so they keep their contrast in both modes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The theme toggle (top right of every page) writes to `localStorage` under the key `uptime-theme`, falls back to the OS `prefers-color-scheme` on first visit, and is applied via an inline script in `app/layout.js` before hydration to avoid a flash of the wrong theme.
 
-## Deploy on Vercel
+Font: [JetBrains Mono](https://www.jetbrains.com/lp/mono/) loaded via
+`next/font/google`, used for every element on the page. A secondary pixel
+face (Press Start 2P) is used sparingly on the leaderboard rows.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+All data on the dashboard, leaderboard, and settings pages is mock data
+wired up for the UI — connect it to your API/auth backend as needed.
