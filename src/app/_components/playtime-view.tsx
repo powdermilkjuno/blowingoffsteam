@@ -6,6 +6,7 @@ import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import StatPill from "@/components/StatPill";
 import MiniLeaderboard from "@/components/MiniLeaderboard";
+import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import { GameList } from "./game-list";
@@ -21,6 +22,9 @@ export function PlaytimeView({
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
+
+  const userRank = leaderboard?.findIndex((entry) => entry.isUser) ?? -1;
+  const userEntry = userRank >= 0 ? leaderboard![userRank] : null;
 
   const profileCard = (
     <Card className="corners flex h-full flex-col p-6" radius="lg">
@@ -63,28 +67,48 @@ export function PlaytimeView({
         )}
       </div>
 
-      {steam && (
-        <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
-          <div>
-            <p className="text-xs text-fern">This week</p>
-            <p className="mt-1.5 text-xl tracking-tight text-paper">
-              {formatPlaytime(periods.week?.minutes ?? 0)}
-            </p>
-          </div>
-          <div className="pl-4">
-            <p className="text-xs text-fern">Today</p>
-            <p className="mt-1.5 text-xl tracking-tight text-paper">
-              {formatPlaytime(periods.today?.minutes ?? 0)}
-            </p>
-          </div>
-          <div className="pl-4">
-            <p className="text-xs text-fern">Lifetime</p>
-            <p className="mt-1.5 text-xl tracking-tight text-paper">
-              {formatPlaytime(steam.playtimeMinutes)}
-            </p>
-            <p className="mt-1 text-xs text-muted">from Steam</p>
+      {userEntry ? (
+        <div className="mt-auto border-t border-line pt-5">
+          <div className="-mx-4">
+            <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
+              <span className="w-14 shrink-0">Rank</span>
+              <span className="w-7 shrink-0" />
+              <span className="flex-1">Name</span>
+              <span className="w-24 shrink-0 text-right">Hours</span>
+            </div>
+            <HighScoreRow
+              rank={userRank + 1}
+              name={userEntry.name}
+              hours={userEntry.hours}
+              avatarUrl={userEntry.avatarUrl}
+              isUser
+            />
           </div>
         </div>
+      ) : (
+        steam && (
+          <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
+            <div>
+              <p className="text-xs text-fern">This week</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
+                {formatPlaytime(periods.week?.minutes ?? 0)}
+              </p>
+            </div>
+            <div className="pl-4">
+              <p className="text-xs text-fern">Today</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
+                {formatPlaytime(periods.today?.minutes ?? 0)}
+              </p>
+            </div>
+            <div className="pl-4">
+              <p className="text-xs text-fern">Lifetime</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
+                {formatPlaytime(steam.playtimeMinutes)}
+              </p>
+              <p className="mt-1 text-xs text-muted">from Steam</p>
+            </div>
+          </div>
+        )
       )}
     </Card>
   );
