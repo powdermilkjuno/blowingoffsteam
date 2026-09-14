@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 function ordinal(n: number): string {
   const rem100 = n % 100;
   if (rem100 >= 11 && rem100 <= 13) return `${n}TH`;
@@ -40,6 +42,7 @@ export default function HighScoreRow({
   rank,
   name,
   hours,
+  avatarUrl,
   delta = 0,
   isUser = false,
   detailed = false,
@@ -47,6 +50,7 @@ export default function HighScoreRow({
   rank: number;
   name: string;
   hours: number;
+  avatarUrl?: string;
   delta?: number;
   isUser?: boolean;
   detailed?: boolean;
@@ -67,13 +71,23 @@ export default function HighScoreRow({
         {ordinal(rank)}
       </span>
 
-      <span
-        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
-          isUser ? "bg-signal/25 text-signal" : "bg-moss/70 text-paper"
-        }`}
-      >
-        {initials(name)}
-      </span>
+      {avatarUrl ? (
+        <Image
+          src={avatarUrl}
+          alt=""
+          width={28}
+          height={28}
+          className="h-7 w-7 flex-shrink-0 rounded object-cover"
+        />
+      ) : (
+        <span
+          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
+            isUser ? "bg-signal/25 text-signal" : "bg-moss/70 text-paper"
+          }`}
+        >
+          {initials(name)}
+        </span>
+      )}
 
       <span className="flex-1 truncate normal-case">{name}</span>
       {detailed ? (

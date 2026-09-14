@@ -110,6 +110,7 @@ export async function loadDashboard(
 export type LeaderboardEntry = {
   name: string;
   hours: number;
+  avatarUrl?: string;
   isUser?: boolean;
 };
 
@@ -124,13 +125,14 @@ function hoursFromMinutes(minutes: number): number {
 }
 
 function rankBoard(
-  rows: { name: string; minutes: number; isUser: boolean }[],
+  rows: { name: string; minutes: number; avatarUrl: string; isUser: boolean }[],
 ): LeaderboardEntry[] {
   return [...rows]
     .sort((a, b) => a.minutes - b.minutes)
     .map((row) => ({
       name: row.name,
       hours: hoursFromMinutes(row.minutes),
+      avatarUrl: row.avatarUrl || undefined,
       isUser: row.isUser,
     }));
 }
@@ -152,6 +154,7 @@ export async function loadLeaderboard(
         : null;
       return {
         name: person.username,
+        avatarUrl: person.avatarUrl,
         isUser: person.id === viewer.id,
         week: periods?.week?.minutes ?? 0,
         month: periods?.month?.minutes ?? 0,
@@ -165,6 +168,7 @@ export async function loadLeaderboard(
       scored.map((row) => ({
         name: row.name,
         minutes: row.week,
+        avatarUrl: row.avatarUrl,
         isUser: row.isUser,
       })),
     ),
@@ -172,6 +176,7 @@ export async function loadLeaderboard(
       scored.map((row) => ({
         name: row.name,
         minutes: row.month,
+        avatarUrl: row.avatarUrl,
         isUser: row.isUser,
       })),
     ),
@@ -179,6 +184,7 @@ export async function loadLeaderboard(
       scored.map((row) => ({
         name: row.name,
         minutes: row.all,
+        avatarUrl: row.avatarUrl,
         isUser: row.isUser,
       })),
     ),
