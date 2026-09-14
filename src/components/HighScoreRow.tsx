@@ -64,7 +64,7 @@ export default function HighScoreRow({
       }`}
     >
       <span
-        className={`w-14 flex-shrink-0 tabular-nums ${
+        className={`w-14 shrink-0 tabular-nums ${
           !isUser && rank <= 3 ? "text-clay" : ""
         }`}
       >
@@ -77,11 +77,11 @@ export default function HighScoreRow({
           alt=""
           width={28}
           height={28}
-          className="h-7 w-7 flex-shrink-0 rounded object-cover"
+          className="h-7 w-7 shrink-0 rounded object-cover"
         />
       ) : (
         <span
-          className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
             isUser ? "bg-signal/25 text-signal" : "bg-moss/70 text-paper"
           }`}
         >
@@ -91,11 +91,11 @@ export default function HighScoreRow({
 
       <span className="flex-1 truncate normal-case">{name}</span>
       {detailed ? (
-        <span className="hidden w-16 flex-shrink-0 text-right text-[9px] sm:block">
+        <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">
           <Trend delta={delta} />
         </span>
       ) : null}
-      <span className="w-24 flex-shrink-0 text-right tabular-nums">{hours}h</span>
+      <span className="w-24 shrink-0 text-right tabular-nums">{hours}h</span>
     </div>
   );
 }
