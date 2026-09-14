@@ -1,5 +1,8 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import Link from "next/link";
+import Logo from "@/components/Logo";
+import Card from "@/components/Card";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export function AuthShell({
   title,
@@ -7,21 +10,46 @@ export function AuthShell({
   children,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-1 items-center justify-center bg-[#1b2838] px-6 py-12 font-sans text-[#c7d5e0]">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <Link href="/" className="text-xs text-[#66c0f4] hover:text-white">
-            Blowing Off Steam
-          </Link>
-          <h1 className="text-2xl font-semibold text-white">{title}</h1>
-          <p className="text-sm text-[#8f98a0]">{subtitle}</p>
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-6 py-16">
+      <div className="grid-fade pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px]" />
+
+      <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-105" />
+
+
+      <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
+
+      <div className="steam-field -z-10" />
+
+      <div className="absolute left-6 top-6">
+        <Link
+          href="/"
+          className="rounded-sm border border-line px-3 py-1.5 text-xs text-paper transition-colors hover:border-fern hover:text-signal"
+        >
+          ← Back
+        </Link>
+      </div>
+
+      <div className="absolute right-6 top-6">
+        <ThemeToggle />
+      </div>
+
+      <div className="mb-8 pointer-events-none">
+        <Logo size="lg" />
+      </div>
+
+      <Card className="corners w-full max-w-sm animate-rise space-y-6 p-7">
+        <div>
+          <h1 className="text-xl text-paper">{title}</h1>
+          {subtitle ? (
+            <p className="mt-1.5 text-sm text-muted">{subtitle}</p>
+          ) : null}
         </div>
         {children}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -29,16 +57,16 @@ export function AuthShell({
 export function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="rounded border border-[#5a2a2a] bg-[#2d1b1b] px-3 py-2 text-sm text-[#ff8f8f]">
+    <p className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
       {message}
     </p>
   );
 }
 
 export const inputClass =
-  "w-full rounded border border-[#2a3f5a] bg-[#16202d] px-3 py-2 text-sm text-white outline-none placeholder:text-[#5a6b7c] focus:border-[#66c0f4]";
+  "w-full rounded border border-line bg-surface px-3.5 py-3 text-sm text-paper outline-none placeholder:text-muted/60 focus:border-signal";
 
-export const labelClass = "block text-xs uppercase tracking-wide text-[#8f98a0]";
+export const labelClass = "block text-xs text-fern";
 
 export const submitClass =
-  "w-full rounded bg-[#66c0f4] px-4 py-2 text-sm font-medium text-[#1b2838] hover:bg-white disabled:opacity-60";
+  "w-full rounded-sm bg-signal px-4 py-3 text-sm font-medium text-ink shadow-[inset_0_-2px_0_color-mix(in_srgb,var(--bos-ink)_22%,transparent)] hover:bg-signal2 disabled:opacity-60";

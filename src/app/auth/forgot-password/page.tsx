@@ -10,8 +10,8 @@ export default function ForgotPasswordPage() {
     >
       <ForgotPasswordForm />
 
-      <p className="text-center text-sm text-[#8f98a0]">
-        <Link href="/auth/sign-in" className="text-[#66c0f4] hover:text-white">
+      <p className="text-center text-sm text-muted">
+        <Link href="/login" className="text-signal hover:text-signal2">
           Back to sign in
         </Link>
       </p>

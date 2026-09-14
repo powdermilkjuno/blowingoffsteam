@@ -37,7 +37,7 @@ export function OnboardingForm({
           required
           className={inputClass}
         />
-        <p className="text-xs text-[#5a6b7c]">
+        <p className="text-xs text-muted">
           This is your public handle at /u/username.
         </p>
       </div>
@@ -83,7 +83,7 @@ export function OnboardingForm({
           required
           className={inputClass}
         />
-        <p className="text-xs text-[#5a6b7c]">
+        <p className="text-xs text-muted">
           Use this with your email next time. Steam is only for linking your
           library.
         </p>

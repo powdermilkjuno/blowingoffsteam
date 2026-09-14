@@ -1,75 +1,132 @@
 import Image from "next/image";
-import Link from "next/link";
-import type { DashboardData } from "@/lib/dashboard-data";
+import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
+import Card from "@/components/Card";
+import PageIntro from "@/components/PageIntro";
+import StatPill from "@/components/StatPill";
+import MiniLeaderboard from "@/components/MiniLeaderboard";
+import HighScoreRow from "@/components/HighScoreRow";
+import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import { GameList } from "./game-list";
 
 export function PlaytimeView({
   data,
   viewerIsOwner,
+  leaderboard,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
+  leaderboard?: LeaderboardEntry[];
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
 
-  return (
-    <div className="space-y-6">
-      <section className="flex items-center gap-4 rounded border border-[#2a3f5a] bg-[#16202d] p-5">
+  const userRank = leaderboard?.findIndex((entry) => entry.isUser) ?? -1;
+  const userEntry = userRank >= 0 ? leaderboard![userRank] : null;
+
+  const profileCard = (
+    <Card className="corners flex h-full flex-col p-6" radius="lg">
+      <div className="flex items-start gap-4">
         {profile.avatarUrl ? (
           <Image
             src={profile.avatarUrl}
             alt=""
-            width={64}
-            height={64}
+            width={56}
+            height={56}
             className="rounded"
           />
         ) : (
-          <div className="grid size-16 place-items-center rounded bg-[#2a3f5a] text-xl text-white">
+          <div className="grid size-14 place-items-center rounded bg-moss/70 text-lg text-paper">
             {profile.displayName.slice(0, 1).toUpperCase()}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold text-white">
-            {profile.displayName}
-          </h1>
-          <p className="text-sm text-[#8f98a0]">@{profile.username}</p>
-          {steam?.profileUrl && (
+          <p className="truncate text-sm text-paper">{profile.displayName}</p>
+          {steam?.profileUrl ? (
             <a
               href={steam.profileUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-[#66c0f4] hover:text-white"
+              className="text-xs text-fern hover:text-signal"
             >
               Steam profile
             </a>
+          ) : (
+            <p className="text-xs text-muted">No Steam link yet</p>
           )}
         </div>
 
-        {steam && (
-          <div className="space-y-2 text-right">
+        {steam && viewerIsOwner && (
+          <RefreshPlaytimeButton
+            lastSyncedAt={steam.syncedAt}
+            timeZone={displayTimeZone}
+          />
+        )}
+      </div>
+
+      {userEntry ? (
+        <div className="mt-auto border-t border-line pt-5">
+          <div className="-mx-4">
+            <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
+              <span className="w-14 shrink-0">Rank</span>
+              <span className="w-7 shrink-0" />
+              <span className="flex-1">Name</span>
+              <span className="w-24 shrink-0 text-right">Hours</span>
+            </div>
+            <HighScoreRow
+              rank={userRank + 1}
+              name={userEntry.name}
+              hours={userEntry.hours}
+              avatarUrl={userEntry.avatarUrl}
+              isUser
+            />
+          </div>
+        </div>
+      ) : (
+        steam && (
+          <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
             <div>
-              <p className="text-2xl font-semibold text-white">
+              <p className="text-xs text-fern">This week</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
+                {formatPlaytime(periods.week?.minutes ?? 0)}
+              </p>
+            </div>
+            <div className="pl-4">
+              <p className="text-xs text-fern">Today</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
+                {formatPlaytime(periods.today?.minutes ?? 0)}
+              </p>
+            </div>
+            <div className="pl-4">
+              <p className="text-xs text-fern">Lifetime</p>
+              <p className="mt-1.5 text-xl tracking-tight text-paper">
                 {formatPlaytime(steam.playtimeMinutes)}
               </p>
-              <p className="text-xs uppercase tracking-wide text-[#8f98a0]">
-                Lifetime
-              </p>
-              <p className="text-[11px] text-[#5a6b7c]">from Steam</p>
+              <p className="mt-1 text-xs text-muted">from Steam</p>
             </div>
-            {viewerIsOwner && (
-              <RefreshPlaytimeButton
-                lastSyncedAt={steam.syncedAt}
-                timeZone={displayTimeZone}
-              />
-            )}
           </div>
-        )}
-      </section>
+        )
+      )}
+    </Card>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageIntro kicker={viewerIsOwner ? "Welcome back" : "Friend"} title={profile.displayName}>
+        @{profile.username}
+      </PageIntro>
+
+      {leaderboard ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="h-full lg:col-span-2">{profileCard}</div>
+          <MiniLeaderboard entries={leaderboard} />
+        </div>
+      ) : (
+        profileCard
+      )}
 
       {steam && steam.playtimePublic && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -80,38 +137,18 @@ export function PlaytimeView({
         </section>
       )}
 
-      {steam && steam.playtimePublic && (
-        <p className="text-xs text-[#5a6b7c]">
-          Lifetime still comes from Steam. On first link we copy Steam&apos;s
-          last 14 days onto this week / last 2 weeks / this month — never onto
-          today. Today only grows from later refreshes. This week is the
-          last 7 days, including today. At midnight in{" "}
-          {displayTimeZone.replaceAll("_", " ")}, today resets and those minutes
-          stay in this week.
-          Tracking started{" "}
-          {periods.sampledFrom
-            ? periods.sampledFrom.toISOString().slice(0, 10)
-            : "today"}
-          .
-        </p>
-      )}
 
       {!steam && (
         <EmptyState
           title="No Steam account linked"
           body={
             viewerIsOwner
-              ? "Link your Steam account to pull in your library and playtime."
-              : `${profile.displayName} has not linked a Steam account yet.`
+              ? "Link Steam to pull your library and playtime."
+              : `${profile.displayName} has not linked Steam yet.`
           }
           action={
             viewerIsOwner ? (
-              <Link
-                href="/auth/steam/login"
-                className="inline-block rounded bg-[#66c0f4] px-4 py-2 text-sm font-medium text-[#1b2838] hover:bg-white"
-              >
-                Link Steam
-              </Link>
+              <SteamButton caption="Official Steam sign-in. We only read playtime." />
             ) : null
           }
         />
@@ -122,7 +159,7 @@ export function PlaytimeView({
           title="Game details are private"
           body={
             viewerIsOwner
-              ? "Your Steam game details are set to private, so per-game playtime cannot be read. Change it in Steam privacy settings, then re-link."
+              ? "Steam game details are private, so per-game playtime cannot be read. Change it in Steam privacy settings, then refresh."
               : `${profile.displayName} keeps their Steam game details private.`
           }
         />
@@ -142,24 +179,6 @@ export function PlaytimeView({
   );
 }
 
-function SteamStat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string;
-  note: string;
-}) {
-  return (
-    <div className="rounded border border-[#2a3f5a] bg-[#16202d] px-4 py-3">
-      <p className="text-lg font-semibold text-white">{value}</p>
-      <p className="text-xs uppercase tracking-wide text-[#8f98a0]">{label}</p>
-      <p className="text-[11px] text-[#5a6b7c]">{note}</p>
-    </div>
-  );
-}
-
 function periodNote(label: string, delta: PeriodDelta): string {
   const window =
     label === "Today"
@@ -170,9 +189,7 @@ function periodNote(label: string, delta: PeriodDelta): string {
           ? "last 4 weeks"
           : "last 14 days";
 
-  if (delta.source === "steam_2weeks") {
-    return "Steam last 14 days";
-  }
+  if (delta.source === "steam_2weeks") return "Steam last 14 days";
   if (delta.source === "since_tracking") {
     return `${window} · since we started watching`;
   }
@@ -182,21 +199,19 @@ function periodNote(label: string, delta: PeriodDelta): string {
 function SampledStat({
   label,
   delta,
-  empty = "no held minutes yet",
 }: {
   label: string;
   delta: PeriodDelta | null;
-  empty?: string;
 }) {
   if (!delta) {
-    return <SteamStat label={label} value="—" note={empty} />;
+    return <StatPill label={label} value="—" sub="no held minutes yet" />;
   }
 
   return (
-    <SteamStat
+    <StatPill
       label={label}
       value={formatPlaytime(delta.minutes)}
-      note={periodNote(label, delta)}
+      sub={periodNote(label, delta)}
     />
   );
 }
@@ -211,10 +226,10 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3 rounded border border-[#2a3f5a] bg-[#16202d] p-5">
-      <h2 className="text-sm font-medium text-white">{title}</h2>
-      <p className="text-sm text-[#8f98a0]">{body}</p>
+    <Card className="corners space-y-3 p-6">
+      <h2 className="text-sm text-paper">{title}</h2>
+      <p className="text-sm text-muted">{body}</p>
       {action}
-    </section>
+    </Card>
   );
 }
