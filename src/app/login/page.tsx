@@ -93,7 +93,7 @@ export default async function LoginPage({
         </p>
       )}
 
-      <SteamButton/>
+      <SteamButton />
       <AuthDivider label="or email" />
       <SignInForm initialError={initialError} />
       <GoogleButton label="Continue with Google" />

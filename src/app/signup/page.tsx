@@ -18,7 +18,6 @@ export default async function SignupPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Connect Steam so we can read your library. Email is optional backup."
     >
       <SteamButton caption="Sign up through Steam. Official button, official OpenID." />
       <AuthDivider label="or email" />

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import Logo from "@/components/Logo";
 import Card from "@/components/Card";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -23,11 +24,20 @@ export function AuthShell({
 
       <div className="steam-field -z-10" />
 
+      <div className="absolute left-6 top-6">
+        <Link
+          href="/"
+          className="rounded-sm border border-line px-3 py-1.5 text-xs text-paper transition-colors hover:border-fern hover:text-signal"
+        >
+          ← Back
+        </Link>
+      </div>
+
       <div className="absolute right-6 top-6">
         <ThemeToggle />
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 pointer-events-none">
         <Logo size="lg" />
       </div>
 
