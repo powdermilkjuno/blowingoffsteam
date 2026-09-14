@@ -32,7 +32,7 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
       aria-label={
         theme === "light" ? "Switch to dark mode" : "Switch to light mode"
       }
-      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded border border-line text-fern transition-colors hover:border-fern hover:text-signal ${className}`}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded border border-line text-fern transition-colors hover:border-fern hover:text-signal ${className}`}
     >
       {theme === "light" ? (
         <MoonIcon width={16} height={16} aria-hidden="true" />

@@ -18,8 +18,8 @@ export default function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
       >
         <span className="h-2 w-2 bg-clay" />
         <span className="absolute -top-1 left-1/2 h-1.5 w-px -translate-x-1/2 bg-signal/80" />
-        <span className="absolute -top-0.5 left-[7px] h-1 w-px rotate-[-28deg] bg-fern/80" />
-        <span className="absolute -top-0.5 right-[7px] h-1 w-px rotate-[28deg] bg-fern/80" />
+        <span className="absolute -top-0.5 left-1.75 h-1 w-px rotate-[-28deg] bg-fern/80" />
+        <span className="absolute -top-0.5 right-1.75 h-1 w-px rotate-28 bg-fern/80" />
       </span>
       <span className="whitespace-nowrap">
         Blowing Off Steam
