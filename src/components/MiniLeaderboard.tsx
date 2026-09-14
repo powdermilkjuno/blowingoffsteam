@@ -25,7 +25,7 @@ export default function MiniLeaderboard({
 
       <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 border-t border-line bg-raised pb-5 pt-5">
         <h3 className="text-center font-pixel text-sm tracking-wide text-clay">
-          High Scores
+          Leaderboard
         </h3>
 
         <div className="mt-5 flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">

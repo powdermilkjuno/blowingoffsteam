@@ -137,17 +137,6 @@ export function PlaytimeView({
         </section>
       )}
 
-      {steam && steam.playtimePublic && (
-        <p className="text-xs leading-relaxed text-muted">
-          Lifetime is Steam&apos;s number. Today only grows from later
-          refreshes. This week is the last 7 days, including today. Midnight
-          is {displayTimeZone.replaceAll("_", " ")}. Tracking started{" "}
-          {periods.sampledFrom
-            ? periods.sampledFrom.toISOString().slice(0, 10)
-            : "today"}
-          .
-        </p>
-      )}
 
       {!steam && (
         <EmptyState
