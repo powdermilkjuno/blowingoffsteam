@@ -18,6 +18,7 @@ import {
   rotateFriendCodeAction,
 } from "./actions";
 import { AddFriendForm } from "./add-friend-form";
+import { FriendsLiveRefresh } from "./live-refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,10 @@ export default async function FriendsPage() {
   return (
     <AppShell active="friends" displayName={profile.displayName}>
       <PageIntro kicker="Compare" title="Friends" />
-
+      <FriendsLiveRefresh />
+      <PageIntro kicker="People" title="Friends">
+        Swap codes, accept invites, then compare libraries.
+      </PageIntro>
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Your friend code</h2>
         <div className="flex items-center gap-3">
