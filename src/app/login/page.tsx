@@ -86,6 +86,7 @@ export default async function LoginPage({
   return (
     <AuthShell
       title="Log in"
+      subtitle="Steam, Google, or the email you signed up with."
     >
       {reset && (
         <p className="rounded border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">

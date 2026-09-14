@@ -5,13 +5,13 @@ export default function PageIntro({
   title,
   children,
 }: {
-  kicker: string;
+  kicker?: string;
   title: string;
   children?: ReactNode;
 }) {
   return (
     <div>
-      <p className="kicker">{kicker}</p>
+      {kicker ? <p className="kicker">{kicker}</p> : null}
       <h1 className="mt-2 truncate text-2xl tracking-tight text-paper">{title}</h1>
       {children ? (
         <div className="mt-2 max-w-xl text-sm leading-relaxed text-muted">

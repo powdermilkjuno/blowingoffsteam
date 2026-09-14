@@ -10,7 +10,7 @@ export function AuthShell({
   children,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   children: ReactNode;
 }) {
   return (
@@ -44,7 +44,9 @@ export function AuthShell({
       <Card className="corners w-full max-w-sm animate-rise space-y-6 p-7">
         <div>
           <h1 className="text-xl text-paper">{title}</h1>
-          <p className="mt-1.5 text-sm text-muted">{subtitle}</p>
+          {subtitle ? (
+            <p className="mt-1.5 text-sm text-muted">{subtitle}</p>
+          ) : null}
         </div>
         {children}
       </Card>
