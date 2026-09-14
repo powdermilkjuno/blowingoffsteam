@@ -130,9 +130,9 @@ export function PlaytimeView({
 
       {steam && steam.playtimePublic && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <SampledStat label="Last 2 weeks" delta={periods.twoWeeks} />
           <SampledStat label="Today" delta={periods.today} />
           <SampledStat label="This week" delta={periods.week} />
+          <SampledStat label="Last 2 weeks" delta={periods.twoWeeks} />
           <SampledStat label="This month" delta={periods.month} />
         </section>
       )}
