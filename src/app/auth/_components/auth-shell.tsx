@@ -14,7 +14,7 @@ export function AuthShell({
 }) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center px-6 py-16">
-      <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
+      <div className="grid-fade pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px]" />
       <div className="steam-field -z-10" />
 
       <div className="absolute right-6 top-6">
