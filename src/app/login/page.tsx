@@ -1,72 +1,119 @@
+import Image from "next/image";
 import Link from "next/link";
-import Logo from "@/components/Logo";
-import Field from "@/components/Field";
-import Button from "@/components/Button";
-import Card from "@/components/Card";
-import ThemeToggle from "@/components/ThemeToggle";
+import { redirect } from "next/navigation";
+import { getEmailForAuthUser } from "@/lib/db/auth-users";
+import { getProfileBySteamId } from "@/lib/db/profiles";
+import { getSteamTicket } from "@/lib/steam-ticket";
+import { auth } from "@/lib/auth/server";
+import { AuthShell } from "../auth/_components/auth-shell";
+import {
+  AuthDivider,
+  GoogleButton,
+  SteamButton,
+} from "../auth/_components/social-buttons";
+import { SignInForm } from "../auth/sign-in/sign-in-form";
 
-export default function LoginPage() {
-  return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center px-6 py-16">
-      <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
+export const dynamic = "force-dynamic";
 
-      <div className="absolute right-6 top-6">
-        <ThemeToggle />
-      </div>
+const ERRORS: Record<string, string> = {
+  steam: "Steam sign-in did not complete. Try again.",
+  steam_taken: "That Steam account is already linked to another account.",
+  account_not_linked: "That Google account is not linked yet. Use Steam or email.",
+};
 
-      <div className="mb-8">
-        <Logo size="lg" />
-      </div>
+export default async function LoginPage({
+  searchParams,
+}: PageProps<"/login">) {
+  const { data: session } = await auth.getSession();
+  if (session?.user) redirect("/dashboard");
 
-      <Card className="w-full max-w-sm animate-rise p-7">
-        <h1 className="text-xl text-paper">Log in</h1>
-        <p className="mt-1.5 text-sm text-muted">
-          Welcome back. Your stats picked up right where you left them.
-        </p>
+  const params = await searchParams;
+  const errorKey = typeof params.error === "string" ? params.error : "";
+  const initialError = ERRORS[errorKey];
+  const reset = params.reset === "1";
 
-        <form className="mt-7 space-y-4">
-          <Field
-            id="username"
-            label="Username"
-            placeholder="yourname"
-            autoComplete="username"
-          />
-          <Field
-            id="password"
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-          />
+  const ticket = await getSteamTicket();
+  const returning = ticket ? await getProfileBySteamId(ticket.steamId) : null;
+  const returningEmail = returning
+    ? await getEmailForAuthUser(returning.authUserId)
+    : null;
 
-          <div className="flex items-center justify-between pt-1 text-xs">
-            <label className="flex items-center gap-2 text-muted">
-              <input
-                type="checkbox"
-                className="h-3.5 w-3.5 rounded-sm border-line bg-surface accent-signal"
-              />
-              Stay signed in
-            </label>
-            <Link
-              href="/auth/forgot-password"
-              className="text-fern hover:text-signal"
-            >
-              Forgot password?
-            </Link>
+  if (returning) {
+    return (
+      <AuthShell
+        title={`Welcome back, ${returning.displayName}`}
+        subtitle="Steam recognised you. Enter your password to finish signing in."
+      >
+        <div className="flex items-center gap-3 rounded border border-line bg-raised p-3">
+          {ticket?.avatarUrl && (
+            <Image
+              src={ticket.avatarUrl}
+              alt=""
+              width={40}
+              height={40}
+              className="rounded"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-sm text-paper">@{returning.username}</p>
+            <p className="truncate text-xs text-muted">
+              {returningEmail ?? "Linked Steam account"}
+            </p>
           </div>
+        </div>
 
-          <Button variant="primary" className="mt-2 w-full" href="/auth/sign-in">
-            Log in
-          </Button>
-        </form>
-      </Card>
+        <SignInForm
+          initialError={initialError}
+          defaultEmail={returningEmail ?? ""}
+          lockEmail
+        />
 
-      <p className="mt-6 text-sm text-muted">
-        New to uptime?{" "}
+        <AuthDivider />
+        <GoogleButton label="Continue with Google" />
+
+        <p className="text-center text-sm text-muted">
+          <Link
+            href="/auth/forgot-password"
+            className="text-fern hover:text-signal"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell
+      title="Log in"
+      subtitle="Steam first if you can — that's how we read playtime. Email works for coming back."
+    >
+      {reset && (
+        <p className="rounded border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">
+          Password set. Sign in with it below.
+        </p>
+      )}
+
+      <SteamButton caption="Official Steam sign-in. We never post to your profile." />
+      <AuthDivider label="or email" />
+      <SignInForm initialError={initialError} />
+      <GoogleButton label="Continue with Google" />
+
+      <p className="text-center text-xs text-muted">
+        <Link
+          href="/auth/forgot-password"
+          className="text-fern hover:text-signal"
+        >
+          Forgot password?
+        </Link>
+      </p>
+
+      <p className="text-center text-sm text-muted">
+        New here?{" "}
         <Link href="/signup" className="text-signal hover:text-signal2">
           Create an account
         </Link>
       </p>
-    </div>
+    </AuthShell>
   );
 }

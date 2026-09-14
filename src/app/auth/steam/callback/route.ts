@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const steamId = await verifySteamOpenId(searchParams, appUrl);
   if (!steamId) {
-    return NextResponse.redirect(new URL("/auth/sign-in?error=steam", appUrl));
+    return NextResponse.redirect(new URL("/login?error=steam", appUrl));
   }
 
   const { data: session } = await auth.getSession();
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
   // Steam cannot mint a session, so an existing account still has to enter its
   // password. Carry the verified identity over so the sign-in page can greet
   // them by name and prefill the email instead of showing an error.
-  const destination = linkedProfile ? "/auth/sign-in" : "/onboarding";
+  const destination = linkedProfile ? "/login" : "/onboarding";
   const response = NextResponse.redirect(new URL(destination, appUrl));
   response.cookies.set(STEAM_TICKET_COOKIE, ticketCookie, ticketCookieOptions());
   return response;

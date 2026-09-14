@@ -20,7 +20,7 @@ export function ForgotPasswordForm() {
 
   if (state.success) {
     return (
-      <p className="rounded border border-[#2a5a2a] bg-[#1b2d1b] px-3 py-2 text-sm text-[#8fdc8f]">
+      <p className="rounded border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">
         {state.success}
       </p>
     );

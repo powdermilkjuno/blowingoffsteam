@@ -122,6 +122,55 @@ body > * {
   z-index: 1;
 }
 
+::selection {
+  background: rgb(var(--color-clay));
+  color: rgb(var(--color-bg));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--color-surface));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-line));
+  border-radius: 999px;
+  border: 2px solid rgb(var(--color-surface));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-fern));
+}
+
+.corners {
+  position: relative;
+}
+.corners::before,
+.corners::after {
+  content: "";
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-color: rgb(var(--color-clay) / 0.85);
+  border-style: solid;
+  pointer-events: none;
+}
+.corners::before {
+  top: 8px;
+  left: 8px;
+  border-width: 1px 0 0 1px;
+}
+.corners::after {
+  right: 8px;
+  bottom: 8px;
+  border-width: 0 1px 1px 0;
+}
+
+.hairline {
+  box-shadow: inset 0 -1px 0 rgb(var(--color-clay) / 0.4);
+}
+
 .grid-fade {
   background-image: linear-gradient(
       rgb(var(--color-signal) / 0.05) 1px,

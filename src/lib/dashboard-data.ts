@@ -1,3 +1,4 @@
+import { listFriends } from "./db/friends";
 import {
   getProfileGames,
   getSteamLink,
@@ -104,4 +105,82 @@ export async function loadDashboard(
   }));
 
   return { profile, steam, games, periods, displayTimeZone };
+}
+
+export type LeaderboardEntry = {
+  name: string;
+  hours: number;
+  isUser?: boolean;
+};
+
+export type LeaderboardBoards = {
+  week: LeaderboardEntry[];
+  month: LeaderboardEntry[];
+  all: LeaderboardEntry[];
+};
+
+function hoursFromMinutes(minutes: number): number {
+  return Math.round((minutes / 60) * 10) / 10;
+}
+
+function rankBoard(
+  rows: { name: string; minutes: number; isUser: boolean }[],
+): LeaderboardEntry[] {
+  return [...rows]
+    .sort((a, b) => b.minutes - a.minutes)
+    .map((row) => ({
+      name: row.name,
+      hours: hoursFromMinutes(row.minutes),
+      isUser: row.isUser,
+    }));
+}
+
+export async function loadLeaderboard(
+  viewer: Profile,
+): Promise<LeaderboardBoards> {
+  const friends = await listFriends(viewer.id);
+  const people = [viewer, ...friends];
+  const now = new Date();
+
+  const scored = await Promise.all(
+    people.map(async (person) => {
+      const steam = await getSteamLink(person.id);
+      const periods = steam
+        ? await getPlaytimePeriods(person.id, now, {
+            timeZone: person.timeZone,
+          })
+        : null;
+      return {
+        name: person.username,
+        isUser: person.id === viewer.id,
+        week: periods?.week?.minutes ?? 0,
+        month: periods?.month?.minutes ?? 0,
+        all: steam?.playtimeMinutes ?? 0,
+      };
+    }),
+  );
+
+  return {
+    week: rankBoard(
+      scored.map((row) => ({
+        name: row.name,
+        minutes: row.week,
+        isUser: row.isUser,
+      })),
+    ),
+    month: rankBoard(
+      scored.map((row) => ({
+        name: row.name,
+        minutes: row.month,
+        isUser: row.isUser,
+      })),
+    ),
+    all: rankBoard(
+      scored.map((row) => ({
+        name: row.name,
+        minutes: row.all,
+        isUser: row.isUser,
+      })),
+    ),
+  };
 }

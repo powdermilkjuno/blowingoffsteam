@@ -41,13 +41,11 @@ export function GameList({
   const ordered = useMemo(() => sortGames(games, sort), [games, sort]);
 
   return (
-    <section className="rounded border border-[#2a3f5a] bg-[#16202d]">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2a3f5a] px-5 py-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-[#8f98a0]">
-          Games
-        </h2>
+    <section className="overflow-hidden rounded-md border border-line bg-surface">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
+        <h2 className="text-xs uppercase tracking-wide text-fern">Games</h2>
         <div className="flex items-center gap-3">
-          <div className="flex overflow-hidden rounded border border-[#2a3f5a] text-xs">
+          <div className="flex overflow-hidden rounded border border-line text-xs">
             <SortButton
               active={sort === "last-played"}
               onClick={() => chooseSort("last-played")}
@@ -61,15 +59,15 @@ export function GameList({
               Lifetime
             </SortButton>
           </div>
-          <span className="text-xs text-[#5a6b7c]">{games.length} titles</span>
+          <span className="text-xs text-muted">{games.length} titles</span>
         </div>
       </header>
 
-      <ul className="divide-y divide-[#2a3f5a]">
+      <ul className="divide-y divide-line">
         {ordered.map((game) => (
           <li
             key={game.appId}
-            className="flex items-center gap-3 px-5 py-3 text-sm"
+            className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
           >
             {game.iconUrl ? (
               <Image
@@ -80,12 +78,12 @@ export function GameList({
                 className="rounded"
               />
             ) : (
-              <div className="size-8 rounded bg-[#2a3f5a]" />
+              <div className="size-8 rounded bg-raised" />
             )}
 
             <div className="min-w-0 flex-1">
-              <p className="truncate text-white">{game.name}</p>
-              <p className="text-xs text-[#5a6b7c]">
+              <p className="truncate text-paper">{game.name}</p>
+              <p className="text-xs text-muted">
                 {formatPlaytime(game.todayMinutes)} today
                 {" · "}
                 {formatPlaytime(game.weekMinutes)} this week
@@ -98,7 +96,7 @@ export function GameList({
               </p>
             </div>
 
-            <p className="shrink-0 tabular-nums text-[#c7d5e0]">
+            <p className="shrink-0 tabular-nums text-clay">
               {formatPlaytime(game.playtimeMinutes)}
             </p>
           </li>
@@ -123,8 +121,8 @@ function SortButton({
       onClick={onClick}
       className={
         active
-          ? "bg-[#66c0f4] px-2.5 py-1 font-medium text-[#1b2838]"
-          : "px-2.5 py-1 text-[#8f98a0] hover:bg-[#1b2838] hover:text-white"
+          ? "bg-signal px-2.5 py-1 font-medium text-ink"
+          : "px-2.5 py-1 text-muted hover:bg-raised hover:text-paper"
       }
     >
       {children}
