@@ -74,6 +74,17 @@ export function formatDateTimeAt(at: Date, timeZone?: string | null): string {
   });
 }
 
+export function formatHeldDay(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  if (!year || !month || !date) return day;
+  return new Date(Date.UTC(year, month - 1, date)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function formatClockAt(at: Date, timeZone?: string | null): string {
   return at.toLocaleTimeString("en-US", {
     timeZone: resolveTimeZone(timeZone),
@@ -304,6 +315,7 @@ export async function saveSteamPlaytime(input: {
     .select({
       appId: gamePlaytime.appId,
       playtimeForever: gamePlaytime.playtimeForever,
+      lastPlayedAt: gamePlaytime.lastPlayedAt,
     })
     .from(gamePlaytime)
     .where(eq(gamePlaytime.profileId, input.profileId));
@@ -311,18 +323,32 @@ export async function saveSteamPlaytime(input: {
   const previousForever = new Map(
     previousRows.map((row) => [row.appId, row.playtimeForever]),
   );
+  const previousLastPlayed = new Map(
+    previousRows.map((row) => [row.appId, row.lastPlayedAt]),
+  );
 
   await db.delete(gamePlaytime).where(eq(gamePlaytime.profileId, input.profileId));
 
-  const rows = input.playtime.games.map((game) => ({
-    profileId: input.profileId,
-    appId: game.appId,
-    name: game.name,
-    playtimeForever: game.playtimeMinutes,
-    playtimeTwoWeeks: game.playtimeTwoWeeksMinutes,
-    lastPlayedAt: game.lastPlayedAt,
-    iconHash: game.iconHash,
-  }));
+  const syncedAtUnix = Math.floor(syncedAt.getTime() / 1000);
+  const rows = input.playtime.games.map((game) => {
+    const steamLast = game.lastPlayedAt;
+    const prevForever = previousForever.get(game.appId);
+    const gained =
+      prevForever !== undefined && game.playtimeMinutes > prevForever;
+    const lastPlayedAt =
+      steamLast ??
+      (gained ? syncedAtUnix : (previousLastPlayed.get(game.appId) ?? null));
+
+    return {
+      profileId: input.profileId,
+      appId: game.appId,
+      name: game.name,
+      playtimeForever: game.playtimeMinutes,
+      playtimeTwoWeeks: game.playtimeTwoWeeksMinutes,
+      lastPlayedAt,
+      iconHash: game.iconHash,
+    };
+  });
 
   const chunkSize = 100;
   for (let i = 0; i < rows.length; i += chunkSize) {

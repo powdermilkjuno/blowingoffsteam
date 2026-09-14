@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import type { DashboardGame } from "@/lib/dashboard-data";
-import { formatLastPlayedAt, formatPlaytime } from "@/lib/db/profiles";
+import {
+  formatHeldDay,
+  formatLastPlayedAt,
+  formatPlaytime,
+} from "@/lib/db/profiles";
+import { recencyUnix } from "@/lib/playtime-windows";
 
 const SORT_STORAGE_KEY = "bos_game_sort";
 const COLLAPSED_COUNT = 10;
@@ -13,7 +18,7 @@ export type GameSort = "last-played" | "lifetime" | "this-week";
 function sortGames(games: DashboardGame[], sort: GameSort): DashboardGame[] {
   return [...games].sort((a, b) => {
     if (sort === "last-played") {
-      const last = (b.lastPlayedAt ?? 0) - (a.lastPlayedAt ?? 0);
+      const last = recencyUnix(b) - recencyUnix(a);
       if (last !== 0) return last;
       return b.playtimeMinutes - a.playtimeMinutes;
     }
@@ -113,6 +118,10 @@ export function GameList({
                 <p className="mt-0.5 text-xs text-clay2">
                   Last played{" "}
                   {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
+                </p>
+              ) : game.lastHeldDay ? (
+                <p className="mt-0.5 text-xs text-clay2">
+                  Played {formatHeldDay(game.lastHeldDay)}
                 </p>
               ) : null}
             </div>

@@ -99,23 +99,36 @@ export function priorUtcWindow(
   return { from, to };
 }
 
-// Steam's 14-day minutes are a lump. When Steam gives a real
-// rtime_last_played inside that window, that is the day we can date.
-// Missing or out-of-window last-played stays on the window start so a
-// fabricated "pulled just now" stamp cannot dump the lump onto today.
+export function recencyUnix(game: {
+  lastPlayedAt?: number | null;
+  lastHeldDay?: string | null;
+}): number {
+  if (game.lastPlayedAt) return game.lastPlayedAt;
+  if (game.lastHeldDay) {
+    const parsed = Date.parse(`${game.lastHeldDay}T12:00:00.000Z`);
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
+  }
+  return 0;
+}
+
+// Steam's 14-day minutes are a lump. A real rtime_last_played inside that
+// window is the day we can date. Missing last-played still means Steam saw
+// play in the last 14 days, so park on yesterday — never today (pull time)
+// and never the 14-day window start (that hides this week).
 export function steamSeedDay(
   at: Date,
   lastPlayedAt: number | null,
   timeZone?: string | null,
 ): string {
   const today = dayStringInZone(at, timeZone);
+  const yesterday = addUtcDays(today, -1);
   const windowStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
 
-  if (lastPlayedAt == null) return windowStart;
+  if (lastPlayedAt == null) return yesterday;
 
   const lastDay = dayStringInZone(new Date(lastPlayedAt * 1000), timeZone);
   if (lastDay >= windowStart && lastDay <= today) return lastDay;
-  return windowStart;
+  return yesterday;
 }
 
 export function computePlaytimeIncrements(
