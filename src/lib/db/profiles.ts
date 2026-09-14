@@ -1,5 +1,5 @@
 import { randomInt } from "crypto";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { GamePlaytime, Playtime } from "../steam-api";
 import { steamGameIconUrl } from "../steam-api";
 import { resolveTimeZone } from "../playtime-windows";
@@ -251,10 +251,7 @@ export async function getProfileGames(
     .select()
     .from(gamePlaytime)
     .where(eq(gamePlaytime.profileId, profileId))
-    .orderBy(
-      sql`${gamePlaytime.lastPlayedAt} desc nulls last`,
-      desc(gamePlaytime.playtimeForever),
-    );
+    .orderBy(desc(gamePlaytime.playtimeForever));
 
   return rows.map((row) => ({
     appId: row.appId,
