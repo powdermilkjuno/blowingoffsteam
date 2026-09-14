@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLinkedAccounts } from "@/lib/auth/accounts";
 import { auth } from "@/lib/auth/server";
-import { loadDashboard } from "@/lib/dashboard-data";
+import { loadDashboard, loadLeaderboard } from "@/lib/dashboard-data";
 import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import AppShell from "@/components/AppShell";
 import { PlaytimeView } from "../_components/playtime-view";
@@ -24,9 +24,10 @@ export default async function DashboardPage({
 
   const { error } = await searchParams;
   const errorMessage = typeof error === "string" ? ERRORS[error] : undefined;
-  const [data, { hasPassword }] = await Promise.all([
+  const [data, { hasPassword }, boards] = await Promise.all([
     loadDashboard(profile),
     getLinkedAccounts(),
+    loadLeaderboard(profile),
   ]);
 
   return (
@@ -47,7 +48,7 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <PlaytimeView data={data} viewerIsOwner />
+      <PlaytimeView data={data} viewerIsOwner leaderboard={boards.week} />
     </AppShell>
   );
 }

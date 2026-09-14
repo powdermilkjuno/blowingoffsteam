@@ -127,7 +127,7 @@ function rankBoard(
   rows: { name: string; minutes: number; isUser: boolean }[],
 ): LeaderboardEntry[] {
   return [...rows]
-    .sort((a, b) => b.minutes - a.minutes)
+    .sort((a, b) => a.minutes - b.minutes)
     .map((row) => ({
       name: row.name,
       hours: hoursFromMinutes(row.minutes),

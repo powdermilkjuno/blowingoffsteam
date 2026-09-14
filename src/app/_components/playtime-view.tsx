@@ -1,10 +1,11 @@
 import Image from "next/image";
-import type { DashboardData } from "@/lib/dashboard-data";
+import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import StatPill from "@/components/StatPill";
+import MiniLeaderboard from "@/components/MiniLeaderboard";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import { GameList } from "./game-list";
@@ -12,12 +13,81 @@ import { GameList } from "./game-list";
 export function PlaytimeView({
   data,
   viewerIsOwner,
+  leaderboard,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
+  leaderboard?: LeaderboardEntry[];
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
+
+  const profileCard = (
+    <Card className="corners flex h-full flex-col p-6" radius="lg">
+      <div className="flex items-start gap-4">
+        {profile.avatarUrl ? (
+          <Image
+            src={profile.avatarUrl}
+            alt=""
+            width={56}
+            height={56}
+            className="rounded"
+          />
+        ) : (
+          <div className="grid size-14 place-items-center rounded bg-moss/70 text-lg text-paper">
+            {profile.displayName.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-paper">{profile.displayName}</p>
+          {steam?.profileUrl ? (
+            <a
+              href={steam.profileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-fern hover:text-signal"
+            >
+              Steam profile
+            </a>
+          ) : (
+            <p className="text-xs text-muted">No Steam link yet</p>
+          )}
+        </div>
+
+        {steam && viewerIsOwner && (
+          <RefreshPlaytimeButton
+            lastSyncedAt={steam.syncedAt}
+            timeZone={displayTimeZone}
+          />
+        )}
+      </div>
+
+      {steam && (
+        <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
+          <div>
+            <p className="text-xs text-fern">This week</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.week?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Today</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.today?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Lifetime</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(steam.playtimeMinutes)}
+            </p>
+            <p className="mt-1 text-xs text-muted">from Steam</p>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -25,70 +95,14 @@ export function PlaytimeView({
         @{profile.username}
       </PageIntro>
 
-      <Card className="corners p-6" radius="lg">
-        <div className="flex items-start gap-4">
-          {profile.avatarUrl ? (
-            <Image
-              src={profile.avatarUrl}
-              alt=""
-              width={56}
-              height={56}
-              className="rounded"
-            />
-          ) : (
-            <div className="grid size-14 place-items-center rounded bg-moss/70 text-lg text-paper">
-              {profile.displayName.slice(0, 1).toUpperCase()}
-            </div>
-          )}
-
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-paper">{profile.displayName}</p>
-            {steam?.profileUrl ? (
-              <a
-                href={steam.profileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-fern hover:text-signal"
-              >
-                Steam profile
-              </a>
-            ) : (
-              <p className="text-xs text-muted">No Steam link yet</p>
-            )}
-          </div>
-
-          {steam && viewerIsOwner && (
-            <RefreshPlaytimeButton
-              lastSyncedAt={steam.syncedAt}
-              timeZone={displayTimeZone}
-            />
-          )}
+      {leaderboard ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="h-full lg:col-span-2">{profileCard}</div>
+          <MiniLeaderboard entries={leaderboard} />
         </div>
-
-        {steam && (
-          <div className="mt-6 grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
-            <div>
-              <p className="text-xs text-fern">This week</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.week?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Today</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.today?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Lifetime</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(steam.playtimeMinutes)}
-              </p>
-              <p className="mt-1 text-xs text-muted">from Steam</p>
-            </div>
-          </div>
-        )}
-      </Card>
+      ) : (
+        profileCard
+      )}
 
       {steam && steam.playtimePublic && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
