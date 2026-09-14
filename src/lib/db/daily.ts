@@ -199,23 +199,119 @@ export async function applyPlaytimeIncrements(input: {
   });
 }
 
-async function daysWithExactMinutes(input: {
+function asDayString(day: string | Date): string {
+  return String(day).slice(0, 10);
+}
+
+async function daysWithPositiveMinutes(input: {
   profileId: string;
   appId: number;
-  minutes: number;
-}): Promise<string[]> {
+}): Promise<{ day: string; minutes: number }[]> {
   const rows = await getDb()
-    .select({ day: playtimeDaily.day })
+    .select({
+      day: playtimeDaily.day,
+      minutes: playtimeDaily.minutes,
+    })
     .from(playtimeDaily)
     .where(
       and(
         eq(playtimeDaily.profileId, input.profileId),
         eq(playtimeDaily.appId, input.appId),
-        eq(playtimeDaily.minutes, input.minutes),
+        sql`${playtimeDaily.minutes} > 0`,
       ),
-    );
+    )
+    .orderBy(asc(playtimeDaily.day));
 
-  return rows.map((row) => String(row.day).slice(0, 10));
+  return rows.map((row) => ({
+    day: asDayString(row.day),
+    minutes: row.minutes,
+  }));
+}
+
+async function firstForeverTodayByApp(input: {
+  profileId: string;
+  today: string;
+  timeZone: string;
+}): Promise<Map<number, number>> {
+  const rows = await getDb()
+    .select({
+      appId: playtimeSnapshots.appId,
+      capturedAt: playtimeSnapshots.capturedAt,
+      forever: playtimeSnapshots.playtimeForever,
+    })
+    .from(playtimeSnapshots)
+    .where(eq(playtimeSnapshots.profileId, input.profileId))
+    .orderBy(asc(playtimeSnapshots.capturedAt));
+
+  const first = new Map<number, number>();
+  for (const row of rows) {
+    if (dayStringInZone(row.capturedAt, input.timeZone) !== input.today) {
+      continue;
+    }
+    if (!first.has(row.appId)) first.set(row.appId, row.forever);
+  }
+  return first;
+}
+
+// Live forever-deltas belong on today. A later reseat used to steal them
+// when the session happened to equal Steam's 2-week total (Half-Life).
+async function restoreTodayFromObservedDeltas(input: {
+  profileId: string;
+  games: {
+    appId: number;
+    playtimeMinutes?: number;
+  }[];
+  today: string;
+  timeZone: string;
+}): Promise<void> {
+  const firstForever = await firstForeverTodayByApp({
+    profileId: input.profileId,
+    today: input.today,
+    timeZone: input.timeZone,
+  });
+  if (firstForever.size === 0) return;
+
+  for (const game of input.games) {
+    if (game.playtimeMinutes == null) continue;
+    const baseline = firstForever.get(game.appId);
+    if (baseline === undefined) continue;
+    const observed = Math.max(0, game.playtimeMinutes - baseline);
+    if (observed === 0) continue;
+
+    const todayHeld = await sumDailyMinutes({
+      profileId: input.profileId,
+      appId: game.appId,
+      fromDay: input.today,
+      toDay: input.today,
+    });
+    let missing = observed - todayHeld;
+    if (missing <= 0) continue;
+
+    const others = await daysWithPositiveMinutes({
+      profileId: input.profileId,
+      appId: game.appId,
+    });
+    for (const row of others) {
+      if (missing <= 0) break;
+      if (row.day === input.today) continue;
+      const take = Math.min(row.minutes, missing);
+      await shiftDailyMinutes({
+        profileId: input.profileId,
+        appId: game.appId,
+        fromDay: row.day,
+        toDay: input.today,
+        minutes: take,
+      });
+      await shiftDailyMinutes({
+        profileId: input.profileId,
+        appId: ACCOUNT_APP_ID,
+        fromDay: row.day,
+        toDay: input.today,
+        minutes: take,
+      });
+      missing -= take;
+    }
+  }
 }
 
 async function reseatSteamSeeds(input: {
@@ -230,70 +326,65 @@ async function reseatSteamSeeds(input: {
 }): Promise<void> {
   const today = dayStringInZone(input.at, input.timeZone);
   const yesterday = addUtcDays(today, -1);
+  const windowStart = rollingStartDay(today, PERIOD_DAYS.twoWeeks);
 
   for (const game of input.games) {
     if (game.playtimeTwoWeeksMinutes <= 0) continue;
 
     const target = steamSeedDay(input.at, game.lastPlayedAt, input.timeZone);
-    const lastPlayed = game.lastPlayedAt != null
-      ? new Date(game.lastPlayedAt * 1000)
-      : null;
+    const lastPlayed =
+      game.lastPlayedAt != null ? new Date(game.lastPlayedAt * 1000) : null;
     const lastDay = lastPlayed
       ? dayStringInZone(lastPlayed, input.timeZone)
       : null;
     const utcLastDay = lastPlayed
       ? dayStringInZone(lastPlayed, "UTC")
       : null;
-    const blobDays = await daysWithExactMinutes({
+    const parkDays = new Set(
+      [windowStart, yesterday, lastDay, utcLastDay].filter(
+        (day): day is string =>
+          Boolean(day) && day !== today && day !== target,
+      ),
+    );
+
+    const rows = await daysWithPositiveMinutes({
       profileId: input.profileId,
       appId: game.appId,
-      minutes: game.playtimeTwoWeeksMinutes,
     });
-    const candidates = [
-      ...new Set(
-        [...blobDays, today, yesterday, lastDay, utcLastDay].filter(
-          (day): day is string => Boolean(day),
-        ),
-      ),
-    ];
 
-    for (const fromDay of candidates) {
-      if (fromDay === target) continue;
-      const minutes = await sumDailyMinutes({
-        profileId: input.profileId,
-        appId: game.appId,
-        fromDay,
-        toDay: fromDay,
-      });
-      if (minutes <= 0) continue;
-      if (minutes !== game.playtimeTwoWeeksMinutes) continue;
+    for (const row of rows) {
+      if (row.day === today || row.day === target) continue;
+      const parked =
+        parkDays.has(row.day) ||
+        row.minutes === game.playtimeTwoWeeksMinutes;
+      if (!parked) continue;
 
       await shiftDailyMinutes({
         profileId: input.profileId,
         appId: game.appId,
-        fromDay,
+        fromDay: row.day,
         toDay: target,
-        minutes,
+        minutes: row.minutes,
       });
       await shiftDailyMinutes({
         profileId: input.profileId,
         appId: ACCOUNT_APP_ID,
-        fromDay,
+        fromDay: row.day,
         toDay: target,
-        minutes,
+        minutes: row.minutes,
       });
-      break;
     }
   }
 }
 
 // First sync / onboard: copy Steam's 14-day play onto a closed day so this
-// week and last 2 weeks are never an empty slate. Today stays 0 until a
-// later refresh records a forever-delta.
+// week and last 2 weeks are never an empty slate. Today only grows from a
+// later forever-delta. Reseat never steals those deltas off today.
 export async function seedMissingDailyFromSteamWindow(input: {
   profileId: string;
   games: {
     appId: number;
+    playtimeMinutes?: number;
     playtimeTwoWeeksMinutes: number;
     lastPlayedAt: number | null;
   }[];
@@ -302,7 +393,14 @@ export async function seedMissingDailyFromSteamWindow(input: {
 }): Promise<void> {
   const at = input.at ?? new Date();
   const timeZone = resolveTimeZone(input.timeZone);
+  const today = dayStringInZone(at, timeZone);
   await reseatSteamSeeds({ ...input, at, timeZone });
+  await restoreTodayFromObservedDeltas({
+    profileId: input.profileId,
+    games: input.games,
+    today,
+    timeZone,
+  });
 
   for (const game of input.games) {
     if (game.playtimeTwoWeeksMinutes <= 0) continue;
@@ -447,6 +545,30 @@ export async function sumDailyMinutesByApp(input: {
     rows
       .filter((row) => row.appId !== ACCOUNT_APP_ID)
       .map((row) => [row.appId, row.minutes]),
+  );
+}
+
+export async function lastHeldDayByApp(
+  profileId: string,
+): Promise<Map<number, string>> {
+  const rows = await getDb()
+    .select({
+      appId: playtimeDaily.appId,
+      day: sql<string>`max(${playtimeDaily.day})::text`,
+    })
+    .from(playtimeDaily)
+    .where(
+      and(
+        eq(playtimeDaily.profileId, profileId),
+        sql`${playtimeDaily.minutes} > 0`,
+      ),
+    )
+    .groupBy(playtimeDaily.appId);
+
+  return new Map(
+    rows
+      .filter((row) => row.appId !== ACCOUNT_APP_ID)
+      .map((row) => [row.appId, String(row.day).slice(0, 10)]),
   );
 }
 

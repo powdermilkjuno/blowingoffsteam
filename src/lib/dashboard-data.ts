@@ -8,6 +8,7 @@ import {
 } from "./db/profiles";
 import {
   getPlaytimePeriods,
+  lastHeldDayByApp,
   seedMissingDailyFromSteamWindow,
   sumDailyMinutesByApp,
   type PlaytimePeriods,
@@ -24,6 +25,7 @@ import type { GamePlaytime } from "./steam-api";
 export type DashboardGame = GamePlaytime & {
   todayMinutes: number;
   weekMinutes: number;
+  lastHeldDay: string | null;
 };
 
 export type DashboardData = {
@@ -89,19 +91,21 @@ export async function loadDashboard(
       };
 
   const weekStart = rollingStartDay(today, PERIOD_DAYS.week);
-  const [todayByApp, weekByApp] = await Promise.all([
+  const [todayByApp, weekByApp, heldDayByApp] = await Promise.all([
     sumDailyMinutesByApp({ profileId: profile.id, fromDay: today, toDay: today }),
     sumDailyMinutesByApp({
       profileId: profile.id,
       fromDay: weekStart,
       toDay: today,
     }),
+    lastHeldDayByApp(profile.id),
   ]);
 
   const games = library.map((game) => ({
     ...game,
     todayMinutes: todayByApp.get(game.appId) ?? 0,
     weekMinutes: weekByApp.get(game.appId) ?? 0,
+    lastHeldDay: heldDayByApp.get(game.appId) ?? null,
   }));
 
   return { profile, steam, games, periods, displayTimeZone };
