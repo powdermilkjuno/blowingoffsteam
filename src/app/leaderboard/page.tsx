@@ -20,9 +20,7 @@ export default async function LeaderboardPage() {
 
   return (
     <AppShell active="leaderboard" displayName={profile.displayName}>
-      <PageIntro kicker="Friends" title="Leaderboard">
-        You and accepted friends. Week and month use held playtime. All time is
-        Steam lifetime.
+      <PageIntro  title="Leaderboard">
       </PageIntro>
 
       <Card className="corners overflow-hidden p-5" radius="sm">

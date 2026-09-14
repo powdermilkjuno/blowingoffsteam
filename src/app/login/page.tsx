@@ -86,7 +86,6 @@ export default async function LoginPage({
   return (
     <AuthShell
       title="Log in"
-      subtitle="Steam first if you can — that's how we read playtime. Email works for coming back."
     >
       {reset && (
         <p className="rounded border border-signal/30 bg-signal/10 px-3 py-2 text-sm text-signal">
@@ -94,7 +93,7 @@ export default async function LoginPage({
         </p>
       )}
 
-      <SteamButton caption="Official Steam sign-in. We never post to your profile." />
+      <SteamButton/>
       <AuthDivider label="or email" />
       <SignInForm initialError={initialError} />
       <GoogleButton label="Continue with Google" />
