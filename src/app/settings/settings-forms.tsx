@@ -35,9 +35,13 @@ function Feedback({ state }: { state: { error?: string; success?: string } }) {
 export function ProfileSettingsForm({
   username,
   displayName,
+  timeZone,
+  timeZones,
 }: {
   username: string;
   displayName: string;
+  timeZone: string;
+  timeZones: string[];
 }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(
     updateProfileAction,
@@ -76,6 +80,28 @@ export function ProfileSettingsForm({
           required
           className={inputClass}
         />
+      </div>
+
+      <div className="space-y-1">
+        <label className={labelClass} htmlFor="timeZone">
+          Time zone
+        </label>
+        <select
+          id="timeZone"
+          name="timeZone"
+          defaultValue={timeZone}
+          required
+          className={inputClass}
+        >
+          {timeZones.map((zone) => (
+            <option key={zone} value={zone}>
+              {zone.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-[#5a6b7c]">
+          Used for last-in-game times and when today rolls into this week.
+        </p>
       </div>
 
       <button type="submit" disabled={pending} className={submitClass}>

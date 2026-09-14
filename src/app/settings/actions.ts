@@ -10,6 +10,7 @@ import {
   updateProfile,
   validateUsername,
 } from "@/lib/db/profiles";
+import { isValidTimeZone } from "@/lib/playtime-windows";
 
 export type ProfileState = { error?: string; success?: string };
 export type PasswordState = { error?: string; success?: string };
@@ -30,10 +31,12 @@ export async function updateProfileAction(
 ): Promise<ProfileState> {
   const username = String(formData.get("username") ?? "");
   const displayName = String(formData.get("displayName") ?? "").trim();
+  const timeZone = String(formData.get("timeZone") ?? "UTC");
 
   const usernameError = validateUsername(username);
   if (usernameError) return { error: usernameError };
   if (!displayName) return { error: "Enter a display name." };
+  if (!isValidTimeZone(timeZone)) return { error: "Choose a valid time zone." };
 
   const { profile } = await requireProfile();
 
@@ -41,13 +44,14 @@ export async function updateProfileAction(
     return { error: "That username is taken." };
   }
 
-  await updateProfile(profile.id, { username, displayName });
+  await updateProfile(profile.id, { username, displayName, timeZone });
 
   // Keep the Neon Auth user's name in step with the profile.
   await auth.updateUser({ name: displayName });
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
+  revalidatePath(`/u/${profile.username}`);
 
   return { success: "Profile updated." };
 }

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getLinkedAccounts } from "@/lib/auth/accounts";
 import { auth } from "@/lib/auth/server";
 import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { listTimeZones } from "@/lib/playtime-windows";
 import { AppNav } from "../_components/app-nav";
 import {
   ChangePasswordForm,
@@ -31,6 +32,8 @@ export default async function SettingsPage() {
           <ProfileSettingsForm
             username={profile.username}
             displayName={profile.displayName}
+            timeZone={profile.timeZone}
+            timeZones={listTimeZones()}
           />
         </Card>
 
