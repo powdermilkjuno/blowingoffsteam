@@ -3,6 +3,8 @@ import type { LeaderboardEntry } from "@/lib/dashboard-data";
 import Card from "@/components/Card";
 import HighScoreRow from "@/components/HighScoreRow";
 
+const VISIBLE_ROWS = 3;
+
 export default function MiniLeaderboard({
   entries,
   href = "/leaderboard",
@@ -10,7 +12,7 @@ export default function MiniLeaderboard({
   entries: LeaderboardEntry[];
   href?: string;
 }) {
-  const rows = entries.slice(0, 5);
+  const rows = entries.slice(0, VISIBLE_ROWS);
 
   return (
     <Card className="corners flex h-full flex-col p-5" radius="lg">
@@ -33,22 +35,43 @@ export default function MiniLeaderboard({
           <span className="w-24 shrink-0 text-right">Hours</span>
         </div>
 
-        {rows.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-muted">
-            No playtime to rank yet.
-          </p>
-        ) : (
-          <div className="space-y-0.5">
-            {rows.map((row, index) => (
-              <MiniRow key={`${row.name}-${index}`} rank={index + 1} row={row} />
-            ))}
-          </div>
-        )}
+        <div className="space-y-0.5">
+          {Array.from({ length: VISIBLE_ROWS }).map((_, index) =>
+            rows[index] ? (
+              <MiniRow
+                key={`${rows[index].name}-${index}`}
+                rank={index + 1}
+                row={rows[index]}
+              />
+            ) : (
+              <EmptyRow key={`empty-${index}`} />
+            ),
+          )}
+        </div>
       </div>
     </Card>
   );
 }
 
 function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
-  return <HighScoreRow rank={rank} name={row.name} hours={row.hours} isUser={row.isUser} />;
+  return (
+    <HighScoreRow
+      rank={rank}
+      name={row.name}
+      hours={row.hours}
+      avatarUrl={row.avatarUrl}
+      isUser={row.isUser}
+    />
+  );
+}
+
+function EmptyRow() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 font-pixel text-[11px] tracking-wide text-muted">
+      <span className="w-14 flex-shrink-0">—</span>
+      <span className="h-7 w-7 flex-shrink-0" />
+      <span className="flex-1">—</span>
+      <span className="w-24 flex-shrink-0 text-right">—</span>
+    </div>
+  );
 }

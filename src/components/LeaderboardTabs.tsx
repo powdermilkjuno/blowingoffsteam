@@ -71,6 +71,7 @@ function BoardRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
       rank={rank}
       name={row.name}
       hours={row.hours}
+      avatarUrl={row.avatarUrl}
       isUser={row.isUser}
     />
   );
