@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
@@ -19,6 +20,41 @@ import {
 import { AddFriendForm } from "./add-friend-form";
 
 export const dynamic = "force-dynamic";
+
+function initials(name: string): string {
+  return name
+    .split(/[_\s.]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
+
+function Avatar({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl?: string | null;
+}) {
+  if (avatarUrl) {
+    return (
+      <Image
+        src={avatarUrl}
+        alt=""
+        width={32}
+        height={32}
+        className="h-8 w-8 shrink-0 rounded object-cover"
+      />
+    );
+  }
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-moss/70 font-mono text-[10px] text-paper">
+      {initials(name)}
+    </span>
+  );
+}
 
 export default async function FriendsPage() {
   const { data: session } = await auth.getSession();
@@ -71,6 +107,8 @@ export default async function FriendsPage() {
                 key={sender.id}
                 className="flex items-center gap-3 py-3 text-sm"
               >
+                <Avatar name={sender.displayName} avatarUrl={sender.avatarUrl} />
+
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-paper">{sender.displayName}</p>
                   <p className="text-xs text-muted">@{sender.username}</p>
@@ -113,6 +151,8 @@ export default async function FriendsPage() {
                 key={target.id}
                 className="flex items-center gap-3 py-3 text-sm"
               >
+                <Avatar name={target.displayName} avatarUrl={target.avatarUrl} />
+
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-paper">{target.displayName}</p>
                   <p className="text-xs text-muted">@{target.username}</p>
@@ -151,6 +191,8 @@ export default async function FriendsPage() {
                 key={friend.id}
                 className="flex items-center gap-3 py-3 text-sm"
               >
+                <Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} />
+
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/u/${friend.username}`}
@@ -182,3 +224,4 @@ export default async function FriendsPage() {
     </AppShell>
   );
 }
+
