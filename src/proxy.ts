@@ -8,6 +8,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/friends/:path*",
+    "/groups/:path*",
     "/settings/:path*",
     "/u/:path*",
   ],

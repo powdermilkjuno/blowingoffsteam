@@ -7,7 +7,7 @@ export default function AppShell({
   children,
   wide = false,
 }: {
-  active?: "dashboard" | "friends" | "leaderboard" | "settings";
+  active?: "dashboard" | "friends" | "groups" | "leaderboard" | "settings";
   displayName?: string;
   children: ReactNode;
   wide?: boolean;

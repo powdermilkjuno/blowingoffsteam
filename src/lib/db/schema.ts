@@ -128,3 +128,63 @@ export const friendships = pgTable(
     ),
   ],
 );
+
+export const groups = pgTable("groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  inviteToken: text("invite_token").notNull().unique(),
+  ownerProfileId: uuid("owner_profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const groupMembers = pgTable(
+  "group_members",
+  {
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.profileId] }),
+    index("group_members_profile_idx").on(table.profileId),
+    check("group_members_role", sql`${table.role} in ('owner', 'member')`),
+    check(
+      "group_members_status",
+      sql`${table.status} in ('pending', 'accepted')`,
+    ),
+  ],
+);
+
+export const groupDailyScores = pgTable(
+  "group_daily_scores",
+  {
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    place: integer("place").notNull(),
+    minutes: integer("minutes").notNull().default(0),
+    points: integer("points").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.profileId, table.day] }),
+    index("group_daily_scores_group_day_idx").on(table.groupId, table.day),
+  ],
+);

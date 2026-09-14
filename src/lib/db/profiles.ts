@@ -21,6 +21,7 @@ const RESERVED_USERNAMES = new Set([
   "auth",
   "dashboard",
   "friends",
+  "groups",
   "onboarding",
   "settings",
   "support",

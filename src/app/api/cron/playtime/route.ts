@@ -1,3 +1,4 @@
+import { awardGroupDailyPoints } from "@/lib/db/group-scores";
 import { syncAllLinkedPlaytime } from "@/lib/playtime-sync";
 
 export const dynamic = "force-dynamic";
@@ -21,5 +22,6 @@ export async function GET(request: Request) {
   }
 
   const result = await syncAllLinkedPlaytime();
-  return Response.json({ ok: true, ...result });
+  const groups = await awardGroupDailyPoints();
+  return Response.json({ ok: true, ...result, groups });
 }

@@ -7,6 +7,7 @@ import { signOutAction } from "@/app/auth/actions";
 const links = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard" },
   { href: "/friends", label: "Friends", key: "friends" },
+  { href: "/groups", label: "Groups", key: "groups" },
   { href: "/leaderboard", label: "Leaderboard", key: "leaderboard" },
 ] as const;
 
@@ -14,7 +15,7 @@ export default function AppHeader({
   active,
   displayName,
 }: {
-  active?: "dashboard" | "friends" | "leaderboard" | "settings";
+  active?: "dashboard" | "friends" | "groups" | "leaderboard" | "settings";
   displayName?: string;
 }) {
   return (
