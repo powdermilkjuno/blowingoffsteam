@@ -3,7 +3,8 @@ import { getLinkedAccounts } from "@/lib/auth/accounts";
 import { auth } from "@/lib/auth/server";
 import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import { listTimeZones } from "@/lib/playtime-windows";
-import { AppNav } from "../_components/app-nav";
+import AppShell from "@/components/AppShell";
+import Card from "@/components/Card";
 import {
   ChangePasswordForm,
   ProfileSettingsForm,
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/auth/sign-in");
+  if (!session?.user) redirect("/login");
 
   const profile = await getProfileByAuthUserId(session.user.id);
   if (!profile) redirect("/onboarding");
@@ -22,69 +23,54 @@ export default async function SettingsPage() {
   const { hasPassword, providers } = await getLinkedAccounts();
 
   return (
-    <div className="flex flex-1 flex-col bg-[#1b2838] font-sans text-[#c7d5e0]">
-      <AppNav displayName={profile.displayName} />
+    <AppShell active="settings" displayName={profile.displayName}>
+      <div>
+        <p className="text-sm text-fern">Account</p>
+        <h1 className="mt-1 text-2xl tracking-tight text-paper">Settings</h1>
+      </div>
 
-      <main className="mx-auto w-full max-w-xl space-y-6 px-6 py-8">
-        <h1 className="text-xl font-semibold text-white">Account settings</h1>
+      <Card className="corners space-y-3 p-6">
+        <h2 className="text-sm text-paper">Profile</h2>
+        <ProfileSettingsForm
+          username={profile.username}
+          displayName={profile.displayName}
+          timeZone={profile.timeZone}
+          timeZones={listTimeZones()}
+        />
+      </Card>
 
-        <Card title="Profile">
-          <ProfileSettingsForm
-            username={profile.username}
-            displayName={profile.displayName}
-            timeZone={profile.timeZone}
-            timeZones={listTimeZones()}
-          />
-        </Card>
+      <Card className="space-y-3 p-6">
+        <h2 className="text-sm text-paper">
+          {hasPassword ? "Password" : "Set a password"}
+        </h2>
+        {hasPassword ? (
+          <ChangePasswordForm />
+        ) : (
+          <SetPasswordPrompt email={session.user.email ?? ""} />
+        )}
+      </Card>
 
-        <Card title={hasPassword ? "Password" : "Set a password"}>
-          {hasPassword ? (
-            <ChangePasswordForm />
-          ) : (
-            <SetPasswordPrompt email={session.user.email ?? ""} />
-          )}
-        </Card>
-
-        <Card title="Sign-in methods">
-          <ul className="space-y-1 text-sm">
-            <li className="flex justify-between">
-              <span>Email and password</span>
-              <span className={hasPassword ? "text-[#8fdc8f]" : "text-[#5a6b7c]"}>
-                {hasPassword ? "Enabled" : "Not set up"}
-              </span>
-            </li>
-            <li className="flex justify-between">
-              <span>Google</span>
-              <span
-                className={
-                  providers.includes("google")
-                    ? "text-[#8fdc8f]"
-                    : "text-[#5a6b7c]"
-                }
-              >
-                {providers.includes("google") ? "Connected" : "Not connected"}
-              </span>
-            </li>
-          </ul>
-        </Card>
-      </main>
-    </div>
-  );
-}
-
-function Card({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3 rounded border border-[#2a3f5a] bg-[#16202d] p-5">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-[#8f98a0]">
-        {title}
-      </h2>
-      {children}
-    </section>
+      <Card className="space-y-3 p-6">
+        <h2 className="text-sm text-paper">Sign-in methods</h2>
+        <ul className="space-y-2 text-sm">
+          <li className="flex justify-between">
+            <span className="text-muted">Email and password</span>
+            <span className={hasPassword ? "text-signal" : "text-muted"}>
+              {hasPassword ? "Enabled" : "Not set up"}
+            </span>
+          </li>
+          <li className="flex justify-between">
+            <span className="text-muted">Google</span>
+            <span
+              className={
+                providers.includes("google") ? "text-signal" : "text-muted"
+              }
+            >
+              {providers.includes("google") ? "Connected" : "Not connected"}
+            </span>
+          </li>
+        </ul>
+      </Card>
+    </AppShell>
   );
 }

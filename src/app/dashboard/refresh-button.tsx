@@ -21,16 +21,16 @@ export function RefreshPlaytimeButton({
       <button
         type="submit"
         disabled={pending}
-        className="rounded border border-[#2a3f5a] px-3 py-1 text-xs text-[#66c0f4] hover:border-[#66c0f4] hover:text-white disabled:opacity-60"
+        className="rounded border border-line px-3 py-1 text-xs text-fern hover:border-signal hover:text-signal disabled:opacity-60"
       >
         {pending ? "Refreshing…" : "Refresh times"}
       </button>
-      <p className="text-[11px] text-[#5a6b7c]">
+      <p className="text-[11px] text-muted">
         Last pulled {formatClockAt(lastSyncedAt, timeZone)}
       </p>
-      {state.error && <p className="text-[11px] text-[#ff8f8f]">{state.error}</p>}
+      {state.error && <p className="text-[11px] text-danger">{state.error}</p>}
       {state.success && (
-        <p className="text-[11px] text-[#8fdc8f]">{state.success}</p>
+        <p className="text-[11px] text-signal">{state.success}</p>
       )}
     </form>
   );

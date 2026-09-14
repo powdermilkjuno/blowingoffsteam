@@ -1,23 +1,27 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
+import { signOutAction } from "@/app/auth/actions";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", key: "dashboard" },
+  { href: "/friends", label: "Friends", key: "friends" },
   { href: "/leaderboard", label: "Leaderboard", key: "leaderboard" },
-];
+] as const;
 
 export default function AppHeader({
   active,
+  displayName,
 }: {
-  active?: "dashboard" | "leaderboard" | "settings";
+  active?: "dashboard" | "friends" | "leaderboard" | "settings";
+  displayName?: string;
 }) {
   return (
-    <header className="border-b border-line">
+    <header className="hairline border-b border-line bg-bg/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-8">
           <Logo />
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav className="flex items-center gap-1 overflow-x-auto">
             {links.map((link) => (
               <Link
                 key={link.key}
@@ -35,6 +39,11 @@ export default function AppHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          {displayName ? (
+            <span className="hidden max-w-32 truncate text-xs text-muted sm:inline">
+              {displayName}
+            </span>
+          ) : null}
           <ThemeToggle />
           <Link
             href="/settings"
@@ -52,13 +61,21 @@ export default function AppHeader({
                 strokeWidth="1.6"
               />
               <path
-                d="M19.4 13.5c.04-.33.06-.66.06-1s-.02-.67-.06-1l2.02-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.38.96a7.4 7.4 0 0 0-1.73-1l-.36-2.53a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.53c-.63.24-1.21.58-1.73 1l-2.38-.96a.5.5 0 0 0-.6.22L2.7 9.28a.5.5 0 0 0 .12.64L4.84 11.5c-.04.33-.06.66-.06 1s.02.67.06 1L2.82 15.08a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.4.3.6.22l2.38-.96c.52.42 1.1.76 1.73 1l.36 2.53c.05.24.26.42.5.42h3.84c.24 0 .45-.18.5-.42l.36-2.53c.63-.24 1.21-.58 1.73-1l2.38.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64L19.4 13.5Z"
+                d="M19.4 13.5c.04-.33.06-.66.06-1s-.02-.67-.06-1l2.02-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.60-.22l-2.38.96a7.4 7.4 0 0 0-1.73-1l-.36-2.53a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.53c-.63.24-1.21.58-1.73 1l-2.38-.96a.5.5 0 0 0-.6.22L2.7 9.28a.5.5 0 0 0 .12.64L4.84 11.5c-.04.33-.06.66-.06 1s.02.67.06 1L2.82 15.08a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.4.3.6.22l2.38-.96c.52.42 1.1.76 1.73 1l.36 2.53c.05.24.26.42.5.42h-3.84c.24 0 .45-.18.5-.42l.36-2.53c.63-.24 1.21-.58 1.73-1l2.38.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64L19.4 13.5Z"
                 stroke="currentColor"
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
             </svg>
           </Link>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="rounded border border-line px-3 py-1.5 text-xs text-fern hover:border-fern hover:text-signal"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </div>
     </header>

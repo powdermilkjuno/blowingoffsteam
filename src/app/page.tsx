@@ -3,6 +3,8 @@ import Logo from "@/components/Logo";
 import Button from "@/components/Button";
 import TerminalWindow from "@/components/TerminalWindow";
 import ThemeToggle from "@/components/ThemeToggle";
+import { auth } from "@/lib/auth/server";
+import { SteamButton } from "./auth/_components/social-buttons";
 
 const week = [
   { d: "M", h: 1.2 },
@@ -43,21 +45,31 @@ const features = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { data: session } = await auth.getSession();
+  const signedIn = Boolean(session?.user);
   const [hero, ...rest] = features;
 
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <header className="hairline mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <Logo />
         <nav className="flex items-center gap-2">
           <ThemeToggle />
-          <Button href="/login" variant="ghost">
-            Log in
-          </Button>
-          <Button href="/signup" variant="primary">
-            Create account
-          </Button>
+          {signedIn ? (
+            <Button href="/dashboard" variant="primary">
+              Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button href="/login" variant="ghost">
+                Log in
+              </Button>
+              <Button href="/signup" variant="primary">
+                Create account
+              </Button>
+            </>
+          )}
         </nav>
       </header>
 
@@ -78,16 +90,14 @@ export default function LandingPage() {
               your week actually looked, and ranks you against the friends
               who dare to check.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button href="/signup" variant="primary">
-                Create account
-              </Button>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <SteamButton boxed={false} />
               <Button href="/login" variant="outline">
-                Log in
+                Email or Google
               </Button>
             </div>
             <p className="mt-6 text-xs text-muted">
-              Free to use. Requires a public Steam profile.
+              Free to use. Steam game details need to be public.
             </p>
           </div>
 

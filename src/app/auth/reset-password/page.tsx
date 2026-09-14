@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({
       >
         <Link
           href="/auth/forgot-password"
-          className="block rounded bg-[#66c0f4] px-4 py-2 text-center text-sm font-medium text-[#1b2838] hover:bg-white"
+          className="block rounded bg-signal px-4 py-2 text-center text-sm font-medium text-ink hover:bg-signal2"
         >
           Send a new link
         </Link>
