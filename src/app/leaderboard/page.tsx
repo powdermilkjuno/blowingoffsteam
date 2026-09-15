@@ -13,11 +13,25 @@ export default async function LeaderboardPage() {
   const view = await loadLeaderboard(profile);
 
   return (
-    <AppShell active="leaderboard" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
+    <AppShell
+      active="leaderboard"
+      displayName={profile.displayName}
+      walletPoints={profile.walletPoints}
+      sitePack={profile.equippedSiteTheme}
+      wide
+    >
       <PageIntro kicker="Lowest hours" title="Leaderboard" />
 
       <Card className="corners p-5" radius="sm">
-        <LeaderboardTabs group={view.group} friends={view.friends} />
+        <LeaderboardTabs
+          group={view.group}
+          friends={view.friends}
+          goalHours={{
+            today: profile.capDayMinutes,
+            week: profile.capWeekMinutes,
+            month: profile.capMonthMinutes,
+          }}
+        />
       </Card>
     </AppShell>
   );
