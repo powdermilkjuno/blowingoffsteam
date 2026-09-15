@@ -22,6 +22,11 @@ export const profiles = pgTable("profiles", {
   avatarUrl: text("avatar_url").notNull().default(""),
   friendCode: text("friend_code").notNull().unique(),
   timeZone: text("time_zone").notNull().default("UTC"),
+  archetype: text("archetype"),
+  capDayMinutes: integer("cap_day_minutes"),
+  capWeekMinutes: integer("cap_week_minutes"),
+  capMonthMinutes: integer("cap_month_minutes"),
+  bio: text("bio").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -153,6 +158,7 @@ export const groupMembers = pgTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     role: text("role").notNull().default("member"),
     status: text("status").notNull().default("pending"),
+    favorited: boolean("favorited").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -9,12 +9,51 @@ import {
 } from "../auth/_components/auth-shell";
 import { completeOnboardingAction, type OnboardingState } from "./actions";
 
+export function CapFields({
+  disabled = false,
+  defaults,
+}: {
+  disabled?: boolean;
+  defaults?: { day?: string; week?: string; month?: string };
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {[
+        { id: "capDayHours", label: "Day hours", value: defaults?.day },
+        { id: "capWeekHours", label: "Week hours", value: defaults?.week },
+        { id: "capMonthHours", label: "Month hours", value: defaults?.month },
+      ].map((field) => (
+        <div key={field.id} className="space-y-1">
+          <label className={labelClass} htmlFor={field.id}>
+            {field.label}
+          </label>
+          <input
+            id={field.id}
+            name={field.id}
+            type="number"
+            min="0"
+            step="0.5"
+            defaultValue={field.value}
+            required={!disabled}
+            disabled={disabled}
+            className={`${inputClass} ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function OnboardingForm({
   defaultUsername,
   defaultDisplayName,
+  timeZones,
+  defaultTimeZone = "America/New_York",
 }: {
   defaultUsername: string;
   defaultDisplayName: string;
+  timeZones: string[];
+  defaultTimeZone?: string;
 }) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(
     completeOnboardingAction,
@@ -89,8 +128,41 @@ export function OnboardingForm({
         </p>
       </div>
 
+      <div className="space-y-1">
+        <label className={labelClass} htmlFor="timeZone">
+          Time zone
+        </label>
+        <select
+          id="timeZone"
+          name="timeZone"
+          defaultValue={state.values?.timeZone ?? defaultTimeZone}
+          required
+          className={inputClass}
+        >
+          {timeZones.map((zone) => (
+            <option key={zone} value={zone}>
+              {zone.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="space-y-1">
+        <p className={labelClass}>Hoped maximum hours</p>
+        <p className="text-xs text-muted">
+          Stay under these to keep day, week, and month streaks.
+        </p>
+        <CapFields
+          defaults={{
+            day: state.values?.capDayHours,
+            week: state.values?.capWeekHours,
+            month: state.values?.capMonthHours,
+          }}
+        />
+      </div>
+
       <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Setting up…" : "Finish setup"}
+        {pending ? "Setting up…" : "Continue"}
       </button>
     </form>
   );

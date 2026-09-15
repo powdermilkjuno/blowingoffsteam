@@ -35,18 +35,27 @@ function Feedback({ state }: { state: { error?: string; success?: string } }) {
 export function ProfileSettingsForm({
   username,
   displayName,
+  bio,
   timeZone,
   timeZones,
+  capDayHours,
+  capWeekHours,
+  capMonthHours,
 }: {
   username: string;
   displayName: string;
+  bio: string;
   timeZone: string;
   timeZones: string[];
+  capDayHours: string;
+  capWeekHours: string;
+  capMonthHours: string;
 }) {
   const [state, action, pending] = useActionState<ProfileState, FormData>(
     updateProfileAction,
     {},
   );
+  const [bioValue, setBioValue] = useState(bio);
 
   return (
     <form action={action} className="space-y-4">
@@ -83,6 +92,23 @@ export function ProfileSettingsForm({
       </div>
 
       <div className="space-y-1">
+        <label className={labelClass} htmlFor="bio">
+          Bio
+        </label>
+        <textarea
+          id="bio"
+          name="bio"
+          value={bioValue}
+          onChange={(event) => setBioValue(event.target.value)}
+          maxLength={80}
+          rows={2}
+          placeholder="A short line. Hovering your name shows this."
+          className={`${inputClass} resize-none`}
+        />
+        <p className="text-xs text-muted">{bioValue.length}/80</p>
+      </div>
+
+      <div className="space-y-1">
         <label className={labelClass} htmlFor="timeZone">
           Time zone
         </label>
@@ -102,6 +128,61 @@ export function ProfileSettingsForm({
         <p className="text-xs text-muted">
           Used for last-in-game times and when today rolls into this week.
         </p>
+      </div>
+
+      <div className="space-y-1">
+        <p className={labelClass}>Hoped maximum hours</p>
+        <p className="text-xs text-muted">
+          Daily streak breaks if you go over the day cap. Week scores Saturday
+          11:59. Month scores the last day at 11:59.
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1">
+            <label className={labelClass} htmlFor="capDayHours">
+              Day
+            </label>
+            <input
+              id="capDayHours"
+              name="capDayHours"
+              type="number"
+              min="0"
+              step="0.5"
+              defaultValue={capDayHours}
+              required
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className={labelClass} htmlFor="capWeekHours">
+              Week
+            </label>
+            <input
+              id="capWeekHours"
+              name="capWeekHours"
+              type="number"
+              min="0"
+              step="0.5"
+              defaultValue={capWeekHours}
+              required
+              className={inputClass}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className={labelClass} htmlFor="capMonthHours">
+              Month
+            </label>
+            <input
+              id="capMonthHours"
+              name="capMonthHours"
+              type="number"
+              min="0"
+              step="0.5"
+              defaultValue={capMonthHours}
+              required
+              className={inputClass}
+            />
+          </div>
+        </div>
       </div>
 
       <button type="submit" disabled={pending} className={submitClass}>

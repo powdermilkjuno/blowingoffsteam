@@ -52,5 +52,5 @@ export async function signUpAction(
     avatarUrl: "",
   });
 
-  redirect("/dashboard");
+  redirect("/onboarding");
 }

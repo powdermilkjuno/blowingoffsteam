@@ -1,8 +1,9 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import { getEmailForAuthUser } from "@/lib/db/auth-users";
 import { getLinkedAccounts } from "@/lib/auth/accounts";
-import { auth } from "@/lib/auth/server";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
 import { listTimeZones } from "@/lib/playtime-windows";
+import { minutesToHoursInput } from "@/lib/hours";
+import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
@@ -15,13 +16,11 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
-
-  const profile = await getProfileByAuthUserId(session.user.id);
-  if (!profile) redirect("/onboarding");
-
-  const { hasPassword, providers } = await getLinkedAccounts();
+  const profile = await requireCompleteProfile();
+  const [{ hasPassword, providers }, email] = await Promise.all([
+    getLinkedAccounts(),
+    getEmailForAuthUser(profile.authUserId),
+  ]);
 
   return (
     <AppShell active="settings" displayName={profile.displayName}>
@@ -32,10 +31,30 @@ export default async function SettingsPage() {
         <ProfileSettingsForm
           username={profile.username}
           displayName={profile.displayName}
+          bio={profile.bio}
           timeZone={profile.timeZone}
           timeZones={listTimeZones()}
+          capDayHours={minutesToHoursInput(profile.capDayMinutes)}
+          capWeekHours={minutesToHoursInput(profile.capWeekMinutes)}
+          capMonthHours={minutesToHoursInput(profile.capMonthMinutes)}
         />
       </Card>
+
+      {!profile.archetype ? (
+        <Card className="corners space-y-3 p-6">
+          <h2 className="text-sm text-paper">Play-style diagnostic</h2>
+          <p className="text-sm text-muted">
+            Optional. We can suggest one archetype badge from your recent
+            last-played times.
+          </p>
+          <Link
+            href="/onboarding?diagnostic=1"
+            className="inline-block text-sm text-signal hover:text-signal2"
+          >
+            See my archetype
+          </Link>
+        </Card>
+      ) : null}
 
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">
@@ -44,7 +63,7 @@ export default async function SettingsPage() {
         {hasPassword ? (
           <ChangePasswordForm />
         ) : (
-          <SetPasswordPrompt email={session.user.email ?? ""} />
+          <SetPasswordPrompt email={email ?? ""} />
         )}
       </Card>
 

@@ -1,8 +1,14 @@
 import { listFriends } from "./db/friends";
 import {
+  listAcceptedMembers,
+  listGroupsForProfile,
+  type GroupListItem,
+} from "./db/groups";
+import {
   getProfileGames,
   getSteamLink,
   isStale,
+  type Archetype,
   type Profile,
   type SteamLink,
 } from "./db/profiles";
@@ -20,6 +26,7 @@ import {
   rollingStartDay,
   PERIOD_DAYS,
 } from "./playtime-windows";
+import { loadStreaks, type Streaks } from "./streaks";
 import type { GamePlaytime } from "./steam-api";
 
 export type DashboardGame = GamePlaytime & {
@@ -34,6 +41,7 @@ export type DashboardData = {
   games: DashboardGame[];
   periods: PlaytimePeriods;
   displayTimeZone: string;
+  streaks: Streaks;
 };
 
 export async function loadDashboard(
@@ -108,7 +116,14 @@ export async function loadDashboard(
     lastHeldDay: heldDayByApp.get(game.appId) ?? null,
   }));
 
-  return { profile, steam, games, periods, displayTimeZone };
+  return {
+    profile,
+    steam,
+    games,
+    periods,
+    displayTimeZone,
+    streaks: await loadStreaks(profile),
+  };
 }
 
 export type LeaderboardEntry = {
@@ -116,20 +131,71 @@ export type LeaderboardEntry = {
   hours: number;
   avatarUrl?: string;
   isUser?: boolean;
+  bio?: string;
+  archetype?: Archetype | null;
+  streaks?: Streaks;
+  caps?: {
+    capDayMinutes: number | null;
+    capWeekMinutes: number | null;
+    capMonthMinutes: number | null;
+  };
 };
 
 export type LeaderboardBoards = {
+  today: LeaderboardEntry[];
   week: LeaderboardEntry[];
   month: LeaderboardEntry[];
   all: LeaderboardEntry[];
+};
+
+export type LeaderboardGroupBoard = {
+  id: string;
+  name: string;
+  starred: boolean;
+  boards: LeaderboardBoards;
+};
+
+export type LeaderboardView = {
+  group: LeaderboardGroupBoard | null;
+  friends: LeaderboardBoards;
 };
 
 function hoursFromMinutes(minutes: number): number {
   return Math.round((minutes / 60) * 10) / 10;
 }
 
+function pickLeaderboardGroup(groups: GroupListItem[]): GroupListItem | null {
+  const starred = groups.find((group) => group.favorited);
+  if (starred) return starred;
+  if (groups.length === 1) return groups[0];
+  return null;
+}
+
+type ScoredPerson = {
+  name: string;
+  avatarUrl: string;
+  isUser: boolean;
+  bio: string;
+  archetype: Archetype | null;
+  streaks: Streaks;
+  caps: LeaderboardEntry["caps"];
+  today: number;
+  week: number;
+  month: number;
+  all: number;
+};
+
 function rankBoard(
-  rows: { name: string; minutes: number; avatarUrl: string; isUser: boolean }[],
+  rows: {
+    name: string;
+    minutes: number;
+    avatarUrl: string;
+    isUser: boolean;
+    bio: string;
+    archetype: Archetype | null;
+    streaks: Streaks;
+    caps: LeaderboardEntry["caps"];
+  }[],
 ): LeaderboardEntry[] {
   return [...rows]
     .sort((a, b) => a.minutes - b.minutes)
@@ -138,59 +204,108 @@ function rankBoard(
       hours: hoursFromMinutes(row.minutes),
       avatarUrl: row.avatarUrl || undefined,
       isUser: row.isUser,
+      bio: row.bio,
+      archetype: row.archetype,
+      streaks: row.streaks,
+      caps: row.caps,
     }));
+}
+
+function boardsFromScored(scored: ScoredPerson[]): LeaderboardBoards {
+  const extras = (row: ScoredPerson) => ({
+    name: row.name,
+    avatarUrl: row.avatarUrl,
+    isUser: row.isUser,
+    bio: row.bio,
+    archetype: row.archetype,
+    streaks: row.streaks,
+    caps: row.caps,
+  });
+
+  return {
+    today: rankBoard(
+      scored.map((row) => ({ ...extras(row), minutes: row.today })),
+    ),
+    week: rankBoard(
+      scored.map((row) => ({ ...extras(row), minutes: row.week })),
+    ),
+    month: rankBoard(
+      scored.map((row) => ({ ...extras(row), minutes: row.month })),
+    ),
+    all: rankBoard(
+      scored.map((row) => ({ ...extras(row), minutes: row.all })),
+    ),
+  };
+}
+
+async function scorePeople(
+  viewer: Profile,
+  people: Profile[],
+): Promise<ScoredPerson[]> {
+  const now = new Date();
+  return Promise.all(
+    people.map(async (person) => {
+      const steam = await getSteamLink(person.id);
+      const [periods, streaks] = await Promise.all([
+        steam
+          ? getPlaytimePeriods(person.id, now, {
+              timeZone: person.timeZone,
+            })
+          : Promise.resolve(null),
+        loadStreaks(person),
+      ]);
+      return {
+        name: person.displayName,
+        avatarUrl: person.avatarUrl,
+        isUser: person.id === viewer.id,
+        bio: person.bio,
+        today: periods?.today?.minutes ?? 0,
+        week: periods?.week?.minutes ?? 0,
+        month: periods?.month?.minutes ?? 0,
+        all: steam?.playtimeMinutes ?? 0,
+        archetype: person.archetype,
+        streaks,
+        caps: {
+          capDayMinutes: person.capDayMinutes,
+          capWeekMinutes: person.capWeekMinutes,
+          capMonthMinutes: person.capMonthMinutes,
+        },
+      };
+    }),
+  );
 }
 
 export async function loadLeaderboard(
   viewer: Profile,
-): Promise<LeaderboardBoards> {
-  const friends = await listFriends(viewer.id);
-  const people = [viewer, ...friends];
-  const now = new Date();
+): Promise<LeaderboardView> {
+  const [friends, groups] = await Promise.all([
+    listFriends(viewer.id),
+    listGroupsForProfile(viewer.id),
+  ]);
+  const group = pickLeaderboardGroup(groups);
 
-  const scored = await Promise.all(
-    people.map(async (person) => {
-      const steam = await getSteamLink(person.id);
-      const periods = steam
-        ? await getPlaytimePeriods(person.id, now, {
-            timeZone: person.timeZone,
-          })
-        : null;
-      return {
-        name: person.username,
-        avatarUrl: person.avatarUrl,
-        isUser: person.id === viewer.id,
-        week: periods?.week?.minutes ?? 0,
-        month: periods?.month?.minutes ?? 0,
-        all: steam?.playtimeMinutes ?? 0,
-      };
-    }),
-  );
+  const [friendScores, groupScores] = await Promise.all([
+    scorePeople(viewer, [viewer, ...friends]),
+    group
+      ? listAcceptedMembers(group.id).then((members) =>
+          scorePeople(
+            viewer,
+            members.map((member) => member.profile),
+          ),
+        )
+      : Promise.resolve(null),
+  ]);
 
   return {
-    week: rankBoard(
-      scored.map((row) => ({
-        name: row.name,
-        minutes: row.week,
-        avatarUrl: row.avatarUrl,
-        isUser: row.isUser,
-      })),
-    ),
-    month: rankBoard(
-      scored.map((row) => ({
-        name: row.name,
-        minutes: row.month,
-        avatarUrl: row.avatarUrl,
-        isUser: row.isUser,
-      })),
-    ),
-    all: rankBoard(
-      scored.map((row) => ({
-        name: row.name,
-        minutes: row.all,
-        avatarUrl: row.avatarUrl,
-        isUser: row.isUser,
-      })),
-    ),
+    group:
+      group && groupScores
+        ? {
+            id: group.id,
+            name: group.name,
+            starred: group.favorited,
+            boards: boardsFromScored(groupScores),
+          }
+        : null,
+    friends: boardsFromScored(friendScores),
   };
 }

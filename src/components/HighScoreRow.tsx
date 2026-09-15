@@ -1,4 +1,8 @@
 import Image from "next/image";
+import type { Archetype } from "@/lib/db/profiles";
+import type { Streaks } from "@/lib/streaks";
+import { BadgeRow } from "@/components/StreakBadge";
+import NameWithBio from "@/components/NameWithBio";
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -46,6 +50,11 @@ export default function HighScoreRow({
   delta = 0,
   isUser = false,
   detailed = false,
+  bio,
+  showBadges = false,
+  archetype,
+  streaks,
+  caps,
 }: {
   rank: number;
   name: string;
@@ -54,10 +63,19 @@ export default function HighScoreRow({
   delta?: number;
   isUser?: boolean;
   detailed?: boolean;
+  bio?: string | null;
+  showBadges?: boolean;
+  archetype?: Archetype | null;
+  streaks?: Streaks;
+  caps?: {
+    capDayMinutes: number | null;
+    capWeekMinutes: number | null;
+    capMonthMinutes: number | null;
+  };
 }) {
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-2 font-pixel text-[11px] tracking-wide ${
+      className={`flex items-center gap-3 overflow-visible px-4 py-3 font-pixel text-[11px] tracking-wide ${
         isUser
           ? "bg-signal/15 text-signal"
           : "text-paper hover:bg-surface/80"
@@ -89,7 +107,16 @@ export default function HighScoreRow({
         </span>
       )}
 
-      <span className="flex-1 truncate normal-case">{name}</span>
+      <span className="min-w-0 flex-1">
+        <NameWithBio
+          name={name}
+          bio={bio}
+          className="block truncate normal-case"
+        />
+        {showBadges ? (
+          <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />
+        ) : null}
+      </span>
       {detailed ? (
         <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">
           <Trend delta={delta} />

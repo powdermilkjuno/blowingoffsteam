@@ -9,6 +9,8 @@ import MiniLeaderboard from "@/components/MiniLeaderboard";
 import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
+import NameWithBio from "@/components/NameWithBio";
+import { BadgeRow } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
 
 export function PlaytimeView({
@@ -82,6 +84,7 @@ export function PlaytimeView({
               hours={userEntry.hours}
               avatarUrl={userEntry.avatarUrl}
               isUser
+              bio={userEntry.bio}
             />
           </div>
         </div>
@@ -115,7 +118,20 @@ export function PlaytimeView({
 
   return (
     <div className="space-y-6">
-      <PageIntro kicker={viewerIsOwner ? "Welcome back" : "Friend"} title={profile.displayName}>
+      <PageIntro
+        kicker={viewerIsOwner ? "Welcome back" : "Friend"}
+        title={
+          <NameWithBio name={profile.displayName} bio={profile.bio} />
+        }
+        aside={
+          <BadgeRow
+            archetype={profile.archetype}
+            streaks={data.streaks}
+            caps={profile}
+            className=""
+          />
+        }
+      >
         @{profile.username}
       </PageIntro>
 
