@@ -1,8 +1,7 @@
-import Image from "next/image";
 import type { Archetype } from "@/lib/db/profiles";
 import type { Streaks } from "@/lib/streaks";
 import { BadgeRow } from "@/components/StreakBadge";
-import NameWithBio from "@/components/NameWithBio";
+import AvatarWithBio from "@/components/AvatarWithBio";
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -17,16 +16,6 @@ function ordinal(n: number): string {
     default:
       return `${n}TH`;
   }
-}
-
-function initials(name: string): string {
-  return name
-    .split(/[_\s.]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
 }
 
 function Trend({ delta }: { delta: number }) {
@@ -89,30 +78,16 @@ export default function HighScoreRow({
         {ordinal(rank)}
       </span>
 
-      {avatarUrl ? (
-        <Image
-          src={avatarUrl}
-          alt=""
-          width={28}
-          height={28}
-          className="h-7 w-7 shrink-0 rounded object-cover"
-        />
-      ) : (
-        <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
-            isUser ? "bg-signal/25 text-signal" : "bg-moss/70 text-paper"
-          }`}
-        >
-          {initials(name)}
-        </span>
-      )}
+      <AvatarWithBio
+        name={name}
+        bio={bio}
+        avatarUrl={avatarUrl}
+        size={28}
+        className={isUser ? "bg-signal/25 text-signal" : ""}
+      />
 
       <span className="min-w-0 flex-1">
-        <NameWithBio
-          name={name}
-          bio={bio}
-          className="block truncate normal-case"
-        />
+        <span className="block truncate normal-case">{name}</span>
         {showBadges ? (
           <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />
         ) : null}

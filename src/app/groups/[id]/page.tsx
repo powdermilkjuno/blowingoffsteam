@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveAppUrl } from "@/lib/app-url";
@@ -24,7 +23,7 @@ import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
-import NameWithBio from "@/components/NameWithBio";
+import AvatarWithBio from "@/components/AvatarWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
 import { BadgeRow } from "@/components/StreakBadge";
 import { AddGroupFriendButton } from "../add-group-friend-button";
@@ -39,41 +38,6 @@ import {
 import { CopyInviteLink } from "../copy-invite";
 
 export const dynamic = "force-dynamic";
-
-function initials(name: string): string {
-  return name
-    .split(/[_\s.]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-function Avatar({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl?: string | null;
-}) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt=""
-        width={32}
-        height={32}
-        className="h-8 w-8 shrink-0 rounded object-cover"
-      />
-    );
-  }
-  return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-moss/70 font-mono text-[10px] text-paper">
-      {initials(name)}
-    </span>
-  );
-}
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -200,16 +164,13 @@ export default async function GroupPage({
                 key={row.profile.id}
                 className="flex items-center gap-3 py-3 text-sm"
               >
-                <Avatar
+                <AvatarWithBio
                   name={row.profile.displayName}
+                  bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <NameWithBio
-                    name={row.profile.displayName}
-                    bio={row.profile.bio}
-                    className="truncate text-paper"
-                  />
+                  <p className="truncate text-paper">{row.profile.displayName}</p>
                   <p className="text-xs text-muted">@{row.profile.username}</p>
                 </div>
                 <form action={acceptJoinAction}>
@@ -251,16 +212,13 @@ export default async function GroupPage({
               <span className="w-10 shrink-0 text-xs text-clay">
                 {ordinal(row.place)}
               </span>
-              <Avatar
+              <AvatarWithBio
                 name={row.profile.displayName}
+                bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
               />
               <div className="min-w-0 flex-1">
-                <NameWithBio
-                  name={row.profile.displayName}
-                  bio={row.profile.bio}
-                  className="truncate"
-                />
+                <p className="truncate">{row.profile.displayName}</p>
                 <BadgeRow
                   archetype={row.profile.archetype}
                   streaks={streaksById.get(row.profile.id)}
@@ -293,16 +251,13 @@ export default async function GroupPage({
                 <span className="w-10 shrink-0 text-xs text-clay">
                   {ordinal(row.place)}
                 </span>
-                <Avatar
+                <AvatarWithBio
                   name={row.profile.displayName}
+                  bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <NameWithBio
-                    name={row.profile.displayName}
-                    bio={row.profile.bio}
-                    className="truncate"
-                  />
+                  <p className="truncate">{row.profile.displayName}</p>
                 </div>
                 <span className="text-xs text-muted">
                   {formatPlaytime(row.minutes)}
@@ -327,24 +282,23 @@ export default async function GroupPage({
                 key={member.profile.id}
                 className="flex items-center gap-3 py-3 text-sm"
               >
-                <Avatar
+                <AvatarWithBio
                   name={member.profile.displayName}
+                  bio={member.profile.bio}
                   avatarUrl={member.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (
-                    <NameWithBio
-                      name={member.profile.displayName}
-                      bio={member.profile.bio}
+                    <Link
                       href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
                       className="truncate text-paper hover:text-signal"
-                    />
+                    >
+                      {member.profile.displayName}
+                    </Link>
                   ) : (
-                    <NameWithBio
-                      name={member.profile.displayName}
-                      bio={member.profile.bio}
-                      className="truncate text-paper"
-                    />
+                    <p className="truncate text-paper">
+                      {member.profile.displayName}
+                    </p>
                   )}
                   <p className="text-xs text-muted">
                     @{member.profile.username}
