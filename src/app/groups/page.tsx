@@ -15,6 +15,7 @@ import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
 import { acceptJoinAction, declineJoinAction, toggleFavoriteAction } from "./actions";
 import { CreateGroupForm } from "./create-group-form";
@@ -54,7 +55,7 @@ export default async function GroupsPage() {
 
   return (
     <AppShell active="groups" displayName={profile.displayName}>
-      <PageIntro kicker="Lowest activity" title="Groups">
+      <PageIntro kicker="Compete" title="Groups">
         Live held minutes for today. Lowest time is winning right now.
       </PageIntro>
 
@@ -93,7 +94,11 @@ export default async function GroupsPage() {
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{row.profile.displayName}</p>
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">
                     wants to join {row.group.name}
                   </p>
@@ -191,7 +196,11 @@ function GroupOverviewCard({
                 avatarUrl={row.profile.avatarUrl}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate">{row.profile.displayName}</p>
+                <NameWithBio
+                  name={row.profile.displayName}
+                  bio={row.profile.bio}
+                  className="truncate"
+                />
               </div>
               <span className="tabular-nums">
                 {formatPlaytime(row.minutes)}

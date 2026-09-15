@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   listFriends,
   listIncomingRequests,
@@ -11,6 +10,7 @@ import Card from "@/components/Card";
 import Button from "@/components/Button";
 import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 import { BadgeRow } from "@/components/StreakBadge";
 import {
   acceptRequestAction,
@@ -82,7 +82,11 @@ export default async function FriendsPage() {
                 />
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{sender.displayName}</p>
+                  <NameWithBio
+                    name={sender.displayName}
+                    bio={sender.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{sender.username}</p>
                 </div>
 
@@ -130,7 +134,11 @@ export default async function FriendsPage() {
                 />
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{target.displayName}</p>
+                  <NameWithBio
+                    name={target.displayName}
+                    bio={target.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{target.username}</p>
                 </div>
                 <span className="text-xs text-muted">Pending</span>
@@ -174,12 +182,12 @@ export default async function FriendsPage() {
                 />
 
                 <div className="min-w-0 flex-1">
-                  <Link
+                  <NameWithBio
+                    name={friend.displayName}
+                    bio={friend.bio}
                     href={`/u/${friend.username}`}
                     className="truncate text-paper hover:text-signal"
-                  >
-                    {friend.displayName}
-                  </Link>
+                  />
                   <BadgeRow
                     archetype={friend.archetype}
                     streaks={streaksById.get(friend.id)}

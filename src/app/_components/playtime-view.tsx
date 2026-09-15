@@ -9,6 +9,7 @@ import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 import { BadgeRow } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
 
@@ -42,7 +43,11 @@ export function PlaytimeView({
         />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-paper">{profile.displayName}</p>
+          <NameWithBio
+            name={profile.displayName}
+            bio={profile.bio}
+            className="truncate text-sm text-paper"
+          />
           {steam?.profileUrl ? (
             <a
               href={steam.profileUrl}
@@ -116,7 +121,9 @@ export function PlaytimeView({
     <div className="space-y-6">
       <PageIntro
         kicker={viewerIsOwner ? "Welcome back" : "Friend"}
-        title={profile.displayName}
+        title={
+          <NameWithBio name={profile.displayName} bio={profile.bio} />
+        }
         aside={
           <BadgeRow
             archetype={profile.archetype}
