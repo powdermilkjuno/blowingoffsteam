@@ -47,11 +47,13 @@ export default function TopFiveChart({
   goal,
   size = "md",
   embedded = false,
+  hideHeading = false,
 }: {
   rows: LeaderboardEntry[];
   goal?: number | null;
   size?: keyof typeof SIZES;
   embedded?: boolean;
+  hideHeading?: boolean;
 }) {
   const spec = SIZES[size];
   const wrap = embedded
@@ -61,6 +63,7 @@ export default function TopFiveChart({
         ? "corners border border-current/25 bg-black/10 p-4"
         : "corners border border-current/25 bg-black/10 p-6"
     : spec.wrap;
+  const showHeading = spec.heading && !hideHeading;
   const ordered = [...rows].sort((a, b) => a.hours - b.hours);
   const topHours = ordered.reduce((max, row) => Math.max(max, row.hours), 0);
   const maxHours = Math.max(topHours, goal ?? 0, 1);
@@ -71,7 +74,7 @@ export default function TopFiveChart({
 
   return (
     <div className={wrap}>
-      {spec.heading ? (
+      {showHeading ? (
         <div className="grid grid-cols-3 items-center">
           {showGoal ? (
             <span className="text-xs text-muted">Goal: {goal}h</span>

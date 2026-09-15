@@ -108,23 +108,22 @@ export default function HighScoreRow({
           font={font}
           nameColor={nameColor}
         />
-        <span className="min-w-0 flex-1">
-          <NameWithBio
-            name={name}
-            bio={bio}
-            className="block truncate normal-case"
-            font={font}
-            nameColor={nameColor}
+        <NameWithBio
+          name={name}
+          bio={bio}
+          className="min-w-0 flex-1 truncate normal-case"
+          font={font}
+          nameColor={nameColor}
+        />
+        {showBadges ? (
+          <BadgeRow
+            archetype={archetype}
+            streaks={streaks}
+            caps={caps}
+            nowrap
+            className="mt-0 shrink-0"
           />
-          {showBadges ? (
-            <BadgeRow
-              archetype={archetype}
-              streaks={streaks}
-              caps={caps}
-              className="mt-1"
-            />
-          ) : null}
-        </span>
+        ) : null}
       </span>
       {detailed ? (
         <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">

@@ -65,6 +65,7 @@ export function BadgeRow({
   streaks,
   caps,
   className = "mt-1.5",
+  nowrap = false,
 }: {
   archetype?: Archetype | null;
   streaks?: Streaks | null;
@@ -74,6 +75,7 @@ export function BadgeRow({
     capMonthMinutes: number | null;
   } | null;
   className?: string;
+  nowrap?: boolean;
 }) {
   const hasCaps =
     caps?.capDayMinutes != null &&
@@ -82,7 +84,9 @@ export function BadgeRow({
 
   return (
     <Tooltip.Provider delayDuration={200}>
-      <span className={`flex flex-wrap items-center gap-2 ${className}`}>
+      <span
+        className={`flex items-center gap-1.5 ${nowrap ? "flex-nowrap" : "flex-wrap"} ${className}`}
+      >
         <ArchetypeBadge archetype={archetype} />
         {hasCaps && streaks ? (
           <>

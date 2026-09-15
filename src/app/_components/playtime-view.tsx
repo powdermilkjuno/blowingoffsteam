@@ -1,4 +1,4 @@
-import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
+import type { DashboardData, LeaderboardBoards } from "@/lib/dashboard-data";
 import type { GroupAccent } from "@/lib/group-accent";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
@@ -10,23 +10,8 @@ import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import AvatarWithBio from "@/components/AvatarWithBio";
 import NameWithBio from "@/components/NameWithBio";
-import { BadgeLegend } from "@/components/StreakBadge";
+import { BadgeLegend, BadgeRow } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
-
-function ordinal(n: number): string {
-  const rem100 = n % 100;
-  if (rem100 >= 11 && rem100 <= 13) return `${n}TH`;
-  switch (n % 10) {
-    case 1:
-      return `${n}ST`;
-    case 2:
-      return `${n}ND`;
-    case 3:
-      return `${n}RD`;
-    default:
-      return `${n}TH`;
-  }
-}
 
 export function PlaytimeView({
   data,
@@ -36,22 +21,23 @@ export function PlaytimeView({
   leaderboardHref = "/leaderboard",
   leaderboardAccent,
   leaderboardDescription,
-  leaderboardGoalMinutes,
+  leaderboardGoalHours,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
-  leaderboard?: LeaderboardEntry[];
+  leaderboard?: LeaderboardBoards;
   leaderboardTitle?: string;
   leaderboardHref?: string;
   leaderboardAccent?: GroupAccent;
   leaderboardDescription?: string;
-  leaderboardGoalMinutes?: number | null;
+  leaderboardGoalHours?: {
+    today: number | null;
+    week: number | null;
+    month: number | null;
+  };
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
-
-  const userRank = leaderboard?.findIndex((entry) => entry.isUser) ?? -1;
-  const userEntry = userRank >= 0 ? leaderboard![userRank] : null;
 
   const profileCard = (
     <Card className="corners flex h-full flex-col p-6" radius="lg">
@@ -84,14 +70,6 @@ export function PlaytimeView({
           ) : (
             <p className="text-xs text-muted">No Steam link yet</p>
           )}
-          {userEntry ? (
-            <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-pixel text-[11px] tracking-wide">
-              <span className="shrink-0 text-clay">{ordinal(userRank + 1)}</span>
-              <span className="shrink-0 text-muted">
-                {userEntry.hours}h today
-              </span>
-            </p>
-          ) : null}
         </div>
 
         {steam && viewerIsOwner && (
@@ -108,30 +86,31 @@ export function PlaytimeView({
           streaks={data.streaks}
           caps={profile}
         />
-        {!userEntry && steam ? (
-          <div className="mt-5 grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
-            <div>
-              <p className="text-xs text-fern">This week</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.week?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Today</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.today?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Lifetime</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(steam.playtimeMinutes)}
-              </p>
-              <p className="mt-1 text-xs text-muted">from Steam</p>
-            </div>
-          </div>
-        ) : null}
       </div>
+
+      {steam ? (
+        <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
+          <div>
+            <p className="text-xs text-fern">This week</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.week?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Today</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.today?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Lifetime</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(steam.playtimeMinutes)}
+            </p>
+            <p className="mt-1 text-xs text-muted">from Steam</p>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 
@@ -140,21 +119,26 @@ export function PlaytimeView({
       <PageIntro
         kicker={viewerIsOwner ? "Welcome back" : "Friend"}
         title={
-          viewerIsOwner ? (
-            "Dashboard"
-          ) : (
-            <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} nameColor={profile.equippedNameColor} />
-          )
+          <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} nameColor={profile.equippedNameColor} />
+        }
+        aside={
+          <BadgeRow
+            archetype={profile.archetype}
+            streaks={data.streaks}
+            caps={profile}
+            nowrap
+            className=""
+          />
         }
       >
-        {viewerIsOwner ? null : `@${profile.username}`}
+        @{profile.username}
       </PageIntro>
 
       {leaderboard ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="h-full lg:col-span-2">
             <MiniLeaderboard
-              entries={leaderboard}
+              boards={leaderboard}
               title={leaderboardTitle}
               href={leaderboardHref}
               featured
@@ -162,7 +146,7 @@ export function PlaytimeView({
               actionLabel={leaderboardHref.startsWith("/groups/") ? "Open group" : "View all"}
               accent={leaderboardAccent}
               description={leaderboardDescription}
-              goalMinutes={leaderboardGoalMinutes}
+              goalHours={leaderboardGoalHours}
             />
           </div>
           {profileCard}
