@@ -45,6 +45,7 @@ export function PlaytimeView({
           bio={profile.bio}
           avatarUrl={profile.avatarUrl}
           size={56}
+          frame={profile.equippedFrame}
         />
 
         <div className="min-w-0 flex-1">
@@ -52,6 +53,7 @@ export function PlaytimeView({
             name={profile.displayName}
             bio={profile.bio}
             className="truncate text-sm text-paper"
+            font={profile.equippedFont}
           />
           {steam?.profileUrl ? (
             <a
@@ -91,6 +93,8 @@ export function PlaytimeView({
               avatarUrl={userEntry.avatarUrl}
               isUser
               bio={userEntry.bio}
+              frame={userEntry.frame}
+              font={userEntry.font}
             />
           </div>
         </div>
@@ -127,7 +131,7 @@ export function PlaytimeView({
       <PageIntro
         kicker={viewerIsOwner ? "Welcome back" : "Friend"}
         title={
-          <NameWithBio name={profile.displayName} bio={profile.bio} />
+          <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} />
         }
         aside={
           <BadgeRow

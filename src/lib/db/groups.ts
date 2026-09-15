@@ -8,6 +8,8 @@ import {
   resolveGroupAccent,
   type GroupAccent,
 } from "../group-accent";
+import { ownsItem } from "./shop";
+import { accentItemId, getShopItem } from "../shop-catalog";
 import {
   groupDailyScores,
   groupMembers,
@@ -591,6 +593,14 @@ export async function updateGroupPresentation(
   if (descriptionError) return { ok: false, error: descriptionError };
   if (!isGroupAccent(input.accent)) {
     return { ok: false, error: "Choose a valid accent color." };
+  }
+  const accentItem = getShopItem(accentItemId(input.accent));
+  if (!accentItem) {
+    return { ok: false, error: "Choose a valid accent color." };
+  }
+  const owned = await ownsItem(actorId, accentItem);
+  if (!owned) {
+    return { ok: false, error: "Unlock that color in the Shop first." };
   }
 
   const [updated] = await getDb()

@@ -23,7 +23,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <AppShell active="settings" displayName={profile.displayName}>
+    <AppShell active="settings" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
       <PageIntro kicker="Account" title="Settings" />
 
       <Card className="corners space-y-3 p-6">

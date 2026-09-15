@@ -24,7 +24,7 @@ export default async function FriendProfilePage({
 
   if (!(await areFriends(viewer.id, target.id))) {
     return (
-      <AppShell displayName={viewer.displayName}>
+      <AppShell displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
         <Card className="corners space-y-3 p-6">
           <h1 className="text-sm text-paper">
             You are not friends with @{target.username}
@@ -45,7 +45,7 @@ export default async function FriendProfilePage({
   });
 
   return (
-    <AppShell displayName={viewer.displayName}>
+    <AppShell displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
       <Link href="/friends" className="text-xs text-fern hover:text-signal">
         ← Back to friends
       </Link>

@@ -13,7 +13,7 @@ export default async function LeaderboardPage() {
   const view = await loadLeaderboard(profile);
 
   return (
-    <AppShell active="leaderboard" displayName={profile.displayName}>
+    <AppShell active="leaderboard" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
       <PageIntro kicker="Lowest hours" title="Leaderboard" />
 
       <Card className="corners p-5" radius="sm">

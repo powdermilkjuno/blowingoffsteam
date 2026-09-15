@@ -26,7 +26,7 @@ export default async function GroupJoinPage({
   const group = await getGroupByToken(token);
   if (!group) {
     return (
-      <AppShell active="groups" displayName={viewer.displayName}>
+      <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
         <Card className="corners space-y-3 p-6">
           <h1 className="text-sm text-paper">Invite not found</h1>
           <p className="text-sm text-muted">
@@ -48,7 +48,7 @@ export default async function GroupJoinPage({
   const pending = membership?.status === "pending";
 
   return (
-    <AppShell active="groups" displayName={viewer.displayName}>
+    <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
       <PageIntro kicker="Join" title={group.name}>
         Lowest activity for the day wins. The owner has to accept you before
         you can see the board.

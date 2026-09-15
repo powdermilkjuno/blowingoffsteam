@@ -16,16 +16,25 @@ const links = [
   { href: "/friends", label: "Friends", key: "friends" },
   { href: "/groups", label: "Groups", key: "groups" },
   { href: "/leaderboard", label: "Leaderboard", key: "leaderboard" },
+  { href: "/shop", label: "Shop", key: "shop" },
 ] as const;
 
-type ActiveKey = "dashboard" | "friends" | "groups" | "leaderboard" | "settings";
+type ActiveKey =
+  | "dashboard"
+  | "friends"
+  | "groups"
+  | "leaderboard"
+  | "settings"
+  | "shop";
 
 export default function AppHeader({
   active,
   displayName,
+  walletPoints,
 }: {
   active?: ActiveKey;
   displayName?: string;
+  walletPoints?: number;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -59,8 +68,9 @@ export default function AppHeader({
 
         <div className="flex shrink-0 items-center gap-2">
           {displayName ? (
-            <span className="hidden max-w-32 truncate text-xs text-muted sm:inline">
+            <span className="hidden max-w-40 truncate text-xs text-muted sm:inline">
               {displayName}
+              {walletPoints != null ? ` · ${walletPoints} pts` : ""}
             </span>
           ) : null}
           <ThemeToggle />
@@ -146,6 +156,7 @@ export default function AppHeader({
             {displayName ? (
               <span className="truncate text-xs text-muted">
                 {displayName}
+                {walletPoints != null ? ` · ${walletPoints} pts` : ""}
               </span>
             ) : (
               <span />

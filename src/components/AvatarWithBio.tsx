@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import BioHover from "@/components/BioHover";
+import { frameClass } from "@/lib/shop-catalog";
 
 function initials(name: string): string {
   return name
@@ -19,12 +20,14 @@ export default function AvatarWithBio({
   avatarUrl,
   size = 32,
   className = "",
+  frame,
 }: {
   name: string;
   bio?: string | null;
   avatarUrl?: string | null;
   size?: number;
   className?: string;
+  frame?: string | null;
 }) {
   const box = {
     width: size,
@@ -51,9 +54,11 @@ export default function AvatarWithBio({
     </span>
   );
 
+  const ring = frameClass(frame);
+
   return (
     <BioHover name={name} bio={bio}>
-      <span className="inline-flex shrink-0">{avatar}</span>
+      <span className={`inline-flex shrink-0 rounded ${ring}`}>{avatar}</span>
     </BioHover>
   );
 }

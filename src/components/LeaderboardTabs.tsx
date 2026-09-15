@@ -78,7 +78,9 @@ function Board({
 
   return (
     <div
-      className={`scanlines -mx-5 mt-5 overflow-visible border-t border-line bg-raised px-4 pb-5 pt-6 last:-mb-5 ${tint?.border ?? ""}`}
+      className={`scanlines -mx-5 mt-5 overflow-visible px-4 pb-5 pt-6 last:-mb-5 ${
+        tint?.card ?? "border-t border-line bg-raised"
+      }`}
     >
       <h3
         className={`text-center font-pixel text-base tracking-wide ${tint?.title ?? "text-clay"}`}
@@ -115,6 +117,8 @@ function Board({
               archetype={row.archetype}
               streaks={row.streaks}
               caps={row.caps}
+              frame={row.frame}
+              font={row.font}
             />
           ))}
         </div>

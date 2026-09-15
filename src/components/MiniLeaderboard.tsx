@@ -27,7 +27,8 @@ export default function MiniLeaderboard({
 
   return (
     <Card
-      className={`corners flex h-full flex-col p-5 ${tint?.border ?? ""}`}
+      tone={tint ? "plain" : "panel"}
+      className={`corners flex h-full flex-col p-5 ${tint?.card ?? ""}`}
       radius="lg"
     >
       <div className="flex items-start justify-between gap-3">
@@ -94,6 +95,8 @@ function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
       avatarUrl={row.avatarUrl}
       isUser={row.isUser}
       bio={row.bio}
+      frame={row.frame}
+      font={row.font}
     />
   );
 }

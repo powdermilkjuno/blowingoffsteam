@@ -57,6 +57,13 @@
       "when": 1789436000000,
       "tag": "0007_group_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789437000000,
+      "tag": "0008_shop",
+      "breakpoints": true
     }
   ]
 }
