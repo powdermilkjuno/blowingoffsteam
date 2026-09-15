@@ -58,6 +58,7 @@ export default async function DashboardPage({
         leaderboardHref={leaderboardHref}
         leaderboardAccent={featured?.accent}
         leaderboardDescription={featured?.description}
+        leaderboardGoalMinutes={profile.capDayMinutes}
       />
     </AppShell>
   );

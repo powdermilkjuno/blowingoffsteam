@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   ArchiveIcon,
   CalendarIcon,
@@ -7,6 +8,7 @@ import {
 } from "@radix-ui/react-icons";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import type { Archetype } from "@/lib/db/profiles";
+import { ARCHETYPE_META, archetypeHover } from "@/lib/archetypes";
 import {
   streakHover,
   streakTone,
@@ -115,5 +117,96 @@ export function BadgeRow({
         ) : null}
       </span>
     </Tooltip.Provider>
+  );
+}
+
+export function BadgeLegend({
+  archetype,
+  streaks,
+  caps,
+}: {
+  archetype?: Archetype | null;
+  streaks?: Streaks | null;
+  caps?: {
+    capDayMinutes: number | null;
+    capWeekMinutes: number | null;
+    capMonthMinutes: number | null;
+  } | null;
+}) {
+  const hasCaps =
+    caps?.capDayMinutes != null &&
+    caps.capWeekMinutes != null &&
+    caps.capMonthMinutes != null;
+  const boundCaps = hasCaps
+    ? (caps as {
+        capDayMinutes: number;
+        capWeekMinutes: number;
+        capMonthMinutes: number;
+      })
+    : null;
+
+  if (!archetype && !boundCaps) return null;
+
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <div className="space-y-3">
+      {archetype ? (
+        <BadgeLegendRow
+          badge={<ArchetypeBadge archetype={archetype} />}
+          label={ARCHETYPE_META[archetype].label}
+          description={archetypeHover(archetype)}
+        />
+      ) : null}
+      {boundCaps && streaks ? (
+        <>
+          <BadgeLegendRow
+            badge={
+              <StreakBadge kind="day" length={streaks.day} caps={boundCaps} />
+            }
+            label={`Day · ${streaks.day}`}
+            description={streakHover("day", streaks.day, boundCaps)}
+          />
+          <BadgeLegendRow
+            badge={
+              <StreakBadge kind="week" length={streaks.week} caps={boundCaps} />
+            }
+            label={`Week · ${streaks.week}`}
+            description={streakHover("week", streaks.week, boundCaps)}
+          />
+          <BadgeLegendRow
+            badge={
+              <StreakBadge
+                kind="month"
+                length={streaks.month}
+                caps={boundCaps}
+              />
+            }
+            label={`Month · ${streaks.month}`}
+            description={streakHover("month", streaks.month, boundCaps)}
+          />
+        </>
+      ) : null}
+      </div>
+    </Tooltip.Provider>
+  );
+}
+
+function BadgeLegendRow({
+  badge,
+  label,
+  description,
+}: {
+  badge: ReactNode;
+  label: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <span className="mt-0.5 shrink-0">{badge}</span>
+      <div className="min-w-0">
+        <p className="font-pixel text-[10px] tracking-wide text-clay">{label}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted">{description}</p>
+      </div>
+    </div>
   );
 }

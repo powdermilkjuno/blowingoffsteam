@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/lib/dashboard-data";
+import { hoursFromMinutes } from "@/lib/hours";
 import { GROUP_ACCENTS, type GroupAccent } from "@/lib/group-accent";
 import Card from "@/components/Card";
 import HighScoreRow from "@/components/HighScoreRow";
+import TopFiveChart from "@/components/TopFiveChart";
 
 export default function MiniLeaderboard({
   entries,
@@ -12,6 +14,8 @@ export default function MiniLeaderboard({
   actionLabel = "View all",
   accent,
   description,
+  goalMinutes,
+  chartOnly = false,
 }: {
   entries: LeaderboardEntry[];
   href?: string;
@@ -20,10 +24,14 @@ export default function MiniLeaderboard({
   actionLabel?: string;
   accent?: GroupAccent;
   description?: string;
+  goalMinutes?: number | null;
+  chartOnly?: boolean;
 }) {
   const visible = featured ? Math.max(entries.length, 1) : 3;
   const rows = entries.slice(0, visible);
   const tint = accent ? GROUP_ACCENTS[accent] : null;
+  const goal =
+    goalMinutes == null ? null : hoursFromMinutes(goalMinutes);
 
   return (
     <Card
@@ -46,42 +54,53 @@ export default function MiniLeaderboard({
         </Link>
       </div>
 
-      <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 overflow-visible border-t border-line bg-raised pb-5 pt-5">
-        <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
-          <span className="w-14 shrink-0">Rank</span>
-          <span className="w-7 shrink-0" />
-          <span className="flex-1">Name</span>
-          <span className="w-24 shrink-0 text-right">Hours</span>
-        </div>
-
-        <div className="space-y-0.5">
-          {featured ? (
-            rows.length === 0 ? (
-              <EmptyRow />
-            ) : (
-              rows.map((row, index) => (
-                <MiniRow
-                  key={`${row.name}-${index}`}
-                  rank={index + 1}
-                  row={row}
-                />
-              ))
-            )
-          ) : (
-            Array.from({ length: 3 }).map((_, index) =>
-              rows[index] ? (
-                <MiniRow
-                  key={`${rows[index].name}-${index}`}
-                  rank={index + 1}
-                  row={rows[index]}
-                />
-              ) : (
-                <EmptyRow key={`empty-${index}`} />
-              ),
-            )
-          )}
-        </div>
+      <div className="mt-4">
+        <TopFiveChart
+          rows={entries.slice(0, 5)}
+          goal={goal}
+          size="sm"
+          embedded={Boolean(tint)}
+        />
       </div>
+
+      {chartOnly ? null : (
+        <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 overflow-visible border-t border-line bg-raised pb-5 pt-5">
+          <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
+            <span className="w-14 shrink-0">Rank</span>
+            <span className="w-7 shrink-0" />
+            <span className="flex-1">Name</span>
+            <span className="w-24 shrink-0 text-right">Hours</span>
+          </div>
+
+          <div className="space-y-0.5">
+            {featured ? (
+              rows.length === 0 ? (
+                <EmptyRow />
+              ) : (
+                rows.map((row, index) => (
+                  <MiniRow
+                    key={`${row.name}-${index}`}
+                    rank={index + 1}
+                    row={row}
+                  />
+                ))
+              )
+            ) : (
+              Array.from({ length: 3 }).map((_, index) =>
+                rows[index] ? (
+                  <MiniRow
+                    key={`${rows[index].name}-${index}`}
+                    rank={index + 1}
+                    row={rows[index]}
+                  />
+                ) : (
+                  <EmptyRow key={`empty-${index}`} />
+                ),
+              )
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -95,6 +114,10 @@ function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
       avatarUrl={row.avatarUrl}
       isUser={row.isUser}
       bio={row.bio}
+      showBadges
+      archetype={row.archetype}
+      streaks={row.streaks}
+      caps={row.caps}
       frame={row.frame}
       font={row.font}
       nameColor={row.nameColor}

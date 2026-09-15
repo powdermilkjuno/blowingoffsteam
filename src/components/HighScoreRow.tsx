@@ -48,6 +48,7 @@ export default function HighScoreRow({
   frame,
   font,
   nameColor,
+  flushPlate = false,
 }: {
   rank: number;
   name: string;
@@ -68,13 +69,16 @@ export default function HighScoreRow({
   frame?: string | null;
   font?: string | null;
   nameColor?: string | null;
+  flushPlate?: boolean;
 }) {
   return (
     <div
-      className={`flex items-center gap-3 overflow-visible px-4 py-3 font-pixel text-[11px] tracking-wide ${
+      className={`flex items-center gap-3 overflow-visible px-4 py-2.5 font-pixel text-[11px] tracking-wide ${
         isUser
           ? "bg-signal/15 text-signal"
-          : "text-paper hover:bg-surface/80"
+          : flushPlate
+            ? "text-paper hover:bg-black/10"
+            : "text-paper hover:bg-surface/80"
       }`}
     >
       <span
@@ -85,28 +89,42 @@ export default function HighScoreRow({
         {ordinal(rank)}
       </span>
 
-      <AvatarWithBio
-        name={name}
-        bio={bio}
-        avatarUrl={avatarUrl}
-        size={28}
-        className={isUser ? "bg-signal/25 text-signal" : ""}
-        frame={frame}
-        font={font}
-        nameColor={nameColor}
-      />
-
-      <span className="min-w-0 flex-1">
-        <NameWithBio
+      <span
+        className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm border px-2 py-1.5 ${
+          isUser
+            ? "border-signal/40 bg-signal/10"
+            : flushPlate
+              ? "border-line/40 bg-black/10"
+              : "border-line bg-raised/80"
+        }`}
+      >
+        <AvatarWithBio
           name={name}
           bio={bio}
-          className="block truncate normal-case"
+          avatarUrl={avatarUrl}
+          size={28}
+          className={isUser ? "bg-signal/25 text-signal" : ""}
+          frame={frame}
           font={font}
           nameColor={nameColor}
         />
-        {showBadges ? (
-          <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />
-        ) : null}
+        <span className="min-w-0 flex-1">
+          <NameWithBio
+            name={name}
+            bio={bio}
+            className="block truncate normal-case"
+            font={font}
+            nameColor={nameColor}
+          />
+          {showBadges ? (
+            <BadgeRow
+              archetype={archetype}
+              streaks={streaks}
+              caps={caps}
+              className="mt-1"
+            />
+          ) : null}
+        </span>
       </span>
       {detailed ? (
         <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">

@@ -29,6 +29,7 @@ import {
 } from "./playtime-windows";
 import { loadStreaks, type Streaks } from "./streaks";
 import type { GamePlaytime } from "./steam-api";
+import { hoursFromMinutes } from "./hours";
 
 export type DashboardGame = GamePlaytime & {
   todayMinutes: number;
@@ -166,10 +167,6 @@ export type LeaderboardView = {
   friends: LeaderboardBoards;
 };
 
-function hoursFromMinutes(minutes: number): number {
-  return Math.round((minutes / 60) * 10) / 10;
-}
-
 function pickLeaderboardGroup(groups: GroupListItem[]): GroupListItem | null {
   const starred = groups.find((group) => group.favorited);
   if (starred) return starred;
@@ -254,6 +251,13 @@ function boardsFromScored(scored: ScoredPerson[]): LeaderboardBoards {
       scored.map((row) => ({ ...extras(row), minutes: row.all })),
     ),
   };
+}
+
+export async function loadGroupBoards(
+  viewer: Profile,
+  people: Profile[],
+): Promise<LeaderboardBoards> {
+  return boardsFromScored(await scorePeople(viewer, people));
 }
 
 async function scorePeople(

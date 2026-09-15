@@ -1,3 +1,7 @@
+export function hoursFromMinutes(minutes: number): number {
+  return Math.round((minutes / 60) * 10) / 10;
+}
+
 export function hoursInputToMinutes(raw: string): number | null {
   const value = Number(String(raw).trim());
   if (!Number.isFinite(value) || value < 0) return null;
