@@ -1,17 +1,17 @@
 import Image from "next/image";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth/server";
 import {
   listFriends,
   listIncomingRequests,
   listOutgoingRequests,
 } from "@/lib/db/friends";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { requireCompleteProfile } from "@/lib/require-profile";
+import { loadStreaks } from "@/lib/streaks";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import PageIntro from "@/components/PageIntro";
+import NameWithBio from "@/components/NameWithBio";
+import { BadgeRow } from "@/components/StreakBadge";
 import {
   acceptRequestAction,
   removeFriendAction,
@@ -58,25 +58,24 @@ function Avatar({
 }
 
 export default async function FriendsPage() {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
-
-  const profile = await getProfileByAuthUserId(session.user.id);
-  if (!profile) redirect("/onboarding");
+  const profile = await requireCompleteProfile();
 
   const [friends, incoming, outgoing] = await Promise.all([
     listFriends(profile.id),
     listIncomingRequests(profile.id),
     listOutgoingRequests(profile.id),
   ]);
+  const friendStreaks = await Promise.all(
+    friends.map(async (friend) => [friend.id, await loadStreaks(friend)] as const),
+  );
+  const streaksById = new Map(friendStreaks);
 
   return (
     <AppShell active="friends" displayName={profile.displayName}>
-      <PageIntro kicker="Compare" title="Friends" />
-      <FriendsLiveRefresh />
-      <PageIntro kicker="People" title="Friends">
+      <PageIntro kicker="Compare" title="Friends">
         Swap codes, accept invites, then compare libraries.
       </PageIntro>
+      <FriendsLiveRefresh />
       <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Your friend code</h2>
         <div className="flex items-center gap-3">
@@ -93,6 +92,7 @@ export default async function FriendsPage() {
           </form>
         </div>
         <p className="text-xs text-muted">
+          Give this to someone so they can add you.
         </p>
       </Card>
 
@@ -113,7 +113,11 @@ export default async function FriendsPage() {
                 <Avatar name={sender.displayName} avatarUrl={sender.avatarUrl} />
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{sender.displayName}</p>
+                  <NameWithBio
+                    name={sender.displayName}
+                    bio={sender.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{sender.username}</p>
                 </div>
 
@@ -157,7 +161,11 @@ export default async function FriendsPage() {
                 <Avatar name={target.displayName} avatarUrl={target.avatarUrl} />
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{target.displayName}</p>
+                  <NameWithBio
+                    name={target.displayName}
+                    bio={target.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{target.username}</p>
                 </div>
                 <span className="text-xs text-muted">Pending</span>
@@ -197,12 +205,17 @@ export default async function FriendsPage() {
                 <Avatar name={friend.displayName} avatarUrl={friend.avatarUrl} />
 
                 <div className="min-w-0 flex-1">
-                  <Link
+                  <NameWithBio
+                    name={friend.displayName}
+                    bio={friend.bio}
                     href={`/u/${friend.username}`}
                     className="truncate text-paper hover:text-signal"
-                  >
-                    {friend.displayName}
-                  </Link>
+                  />
+                  <BadgeRow
+                    archetype={friend.archetype}
+                    streaks={streaksById.get(friend.id)}
+                    caps={friend}
+                  />
                   <p className="text-xs text-muted">@{friend.username}</p>
                 </div>
 

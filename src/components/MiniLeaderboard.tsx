@@ -23,7 +23,7 @@ export default function MiniLeaderboard({
         </Link>
       </div>
 
-      <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 border-t border-line bg-raised pb-5 pt-5">
+      <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 overflow-visible border-t border-line bg-raised pb-5 pt-5">
         <h3 className="text-center font-pixel text-sm tracking-wide text-clay">
           Leaderboard
         </h3>
@@ -61,6 +61,7 @@ function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
       hours={row.hours}
       avatarUrl={row.avatarUrl}
       isUser={row.isUser}
+      bio={row.bio}
     />
   );
 }

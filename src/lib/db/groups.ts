@@ -2,7 +2,7 @@ import { randomInt } from "crypto";
 import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { sumDailyMinutes } from "./daily";
 import { getDb } from "./index";
-import type { Profile } from "./profiles";
+import { toProfile, type Profile } from "./profiles";
 import {
   groupDailyScores,
   groupMembers,
@@ -27,6 +27,7 @@ export type GroupListItem = Group & {
   memberCount: number;
   myPoints: number;
   role: "owner" | "member";
+  favorited: boolean;
 };
 
 export type GroupMembership = {
@@ -34,6 +35,7 @@ export type GroupMembership = {
   profileId: string;
   role: "owner" | "member";
   status: "pending" | "accepted";
+  favorited: boolean;
 };
 
 export type GroupMemberRow = {
@@ -73,18 +75,6 @@ function toGroup(row: typeof groups.$inferSelect): Group {
     ownerProfileId: row.ownerProfileId,
     timeZone: row.timeZone,
     createdAt: row.createdAt,
-  };
-}
-
-function toProfile(row: typeof profiles.$inferSelect): Profile {
-  return {
-    id: row.id,
-    authUserId: row.authUserId,
-    username: row.username,
-    displayName: row.displayName,
-    avatarUrl: row.avatarUrl,
-    friendCode: row.friendCode,
-    timeZone: row.timeZone,
   };
 }
 
@@ -174,6 +164,7 @@ export async function getMembership(
     profileId: row.profileId,
     role: row.role as "owner" | "member",
     status: row.status as "pending" | "accepted",
+    favorited: row.favorited,
   };
 }
 
@@ -185,6 +176,7 @@ export async function listGroupsForProfile(
     .select({
       group: groups,
       role: groupMembers.role,
+      favorited: groupMembers.favorited,
     })
     .from(groupMembers)
     .innerJoin(groups, eq(groups.id, groupMembers.groupId))
@@ -237,8 +229,12 @@ export async function listGroupsForProfile(
       memberCount: countByGroup.get(row.group.id) ?? 0,
       myPoints: pointsByGroup.get(row.group.id) ?? 0,
       role: row.role as "owner" | "member",
+      favorited: row.favorited,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      if (a.favorited !== b.favorited) return a.favorited ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
 }
 
 export async function listPendingJoinsForOwner(
@@ -411,6 +407,28 @@ export async function leaveGroup(
       ),
     );
   return { ok: true, value: true };
+}
+
+export async function toggleFavoriteGroup(
+  profileId: string,
+  groupId: string,
+): Promise<GroupResult<boolean>> {
+  const membership = await getMembership(groupId, profileId);
+  if (!membership || membership.status !== "accepted") {
+    return { ok: false, error: "You are not in that group." };
+  }
+
+  const next = !membership.favorited;
+  await getDb()
+    .update(groupMembers)
+    .set({ favorited: next })
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.profileId, profileId),
+      ),
+    );
+  return { ok: true, value: next };
 }
 
 export async function deleteGroup(

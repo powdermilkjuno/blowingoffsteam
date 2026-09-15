@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { auth } from "@/lib/auth/server";
+import { notFound } from "next/navigation";
 import { resolveAppUrl } from "@/lib/app-url";
 import { getFriendshipStatuses } from "@/lib/db/friends";
 import {
@@ -17,13 +16,17 @@ import {
 import {
   formatHeldDay,
   formatPlaytime,
-  getProfileByAuthUserId,
 } from "@/lib/db/profiles";
 import { addUtcDays, dayStringInZone } from "@/lib/playtime-windows";
+import { requireCompleteProfile } from "@/lib/require-profile";
+import { loadStreaks } from "@/lib/streaks";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
+import NameWithBio from "@/components/NameWithBio";
+import FavoriteStarButton from "@/components/FavoriteStarButton";
+import { BadgeRow } from "@/components/StreakBadge";
 import { AddGroupFriendButton } from "../add-group-friend-button";
 import {
   acceptJoinAction,
@@ -31,6 +34,7 @@ import {
   deleteGroupAction,
   leaveGroupAction,
   rotateInviteAction,
+  toggleFavoriteAction,
 } from "../actions";
 import { CopyInviteLink } from "../copy-invite";
 
@@ -91,11 +95,7 @@ export default async function GroupPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
-
-  const viewer = await getProfileByAuthUserId(session.user.id);
-  if (!viewer) redirect("/onboarding");
+  const viewer = await requireCompleteProfile();
 
   const { id } = await params;
   const group = await getGroupById(id);
@@ -130,14 +130,21 @@ export default async function GroupPage({
     resolveAppUrl(),
   ]);
 
-  const [live, lastScores, friendships] = await Promise.all([
+  const [live, lastScores, friendships, memberStreaks] = await Promise.all([
     rankMembersForDay(members, today),
     latestDay ? listScoresForDay(group.id, latestDay) : Promise.resolve([]),
     getFriendshipStatuses(
       viewer.id,
       members.map((member) => member.profile.id),
     ),
+    Promise.all(
+      members.map(async (member) => [
+        member.profile.id,
+        await loadStreaks(member.profile),
+      ] as const),
+    ),
   ]);
+  const streaksById = new Map(memberStreaks);
 
   const profileById = new Map(
     members.map((member) => [member.profile.id, member.profile]),
@@ -164,6 +171,10 @@ export default async function GroupPage({
         minutes wins. Scores are calculated on {formatHeldDay(yesterday)} after the daily
         Steam pull at {group.timeZone}.
       </PageIntro>
+      <form action={toggleFavoriteAction} className="-mt-3">
+        <input type="hidden" name="groupId" value={group.id} />
+        <FavoriteStarButton favorited={membership.favorited} labeled />
+      </form>
 
       {isOwner ? (
         <Card className="corners space-y-3 p-6">
@@ -194,7 +205,11 @@ export default async function GroupPage({
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{row.profile.displayName}</p>
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{row.profile.username}</p>
                 </div>
                 <form action={acceptJoinAction}>
@@ -220,7 +235,7 @@ export default async function GroupPage({
         </Card>
       ) : null}
 
-      <Card className="corners overflow-hidden p-5" radius="sm">
+      <Card className="corners p-5" radius="sm">
         <h2 className="text-sm text-paper">Today</h2>
         <p className="mt-1 text-xs text-muted">
           Live held minutes. Points land when cron scores yesterday.
@@ -240,9 +255,18 @@ export default async function GroupPage({
                 name={row.profile.displayName}
                 avatarUrl={row.profile.avatarUrl}
               />
-              <span className="min-w-0 flex-1 truncate">
-                {row.profile.displayName}
-              </span>
+              <div className="min-w-0 flex-1">
+                <NameWithBio
+                  name={row.profile.displayName}
+                  bio={row.profile.bio}
+                  className="truncate"
+                />
+                <BadgeRow
+                  archetype={row.profile.archetype}
+                  streaks={streaksById.get(row.profile.id)}
+                  caps={row.profile}
+                />
+              </div>
               <span className="tabular-nums">
                 {formatPlaytime(row.minutes)}
               </span>
@@ -251,7 +275,7 @@ export default async function GroupPage({
         </div>
       </Card>
 
-      <Card className="corners overflow-hidden p-5" radius="sm">
+      <Card className="corners p-5" radius="sm">
         <h2 className="text-sm text-paper">
           {latestDay
             ? `Last scored · ${formatHeldDay(latestDay)}`
@@ -273,9 +297,13 @@ export default async function GroupPage({
                   name={row.profile.displayName}
                   avatarUrl={row.profile.avatarUrl}
                 />
-                <span className="min-w-0 flex-1 truncate">
-                  {row.profile.displayName}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate"
+                  />
+                </div>
                 <span className="text-xs text-muted">
                   {formatPlaytime(row.minutes)}
                 </span>
@@ -305,16 +333,18 @@ export default async function GroupPage({
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (
-                    <Link
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
                       href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
                       className="truncate text-paper hover:text-signal"
-                    >
-                      {member.profile.displayName}
-                    </Link>
+                    />
                   ) : (
-                    <p className="truncate text-paper">
-                      {member.profile.displayName}
-                    </p>
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
+                      className="truncate text-paper"
+                    />
                   )}
                   <p className="text-xs text-muted">
                     @{member.profile.username}

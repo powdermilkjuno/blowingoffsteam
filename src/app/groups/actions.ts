@@ -12,8 +12,9 @@ import {
   leaveGroup,
   requestJoin,
   rotateInviteToken,
+  toggleFavoriteGroup,
 } from "@/lib/db/groups";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { getProfileByAuthUserId, isProfileComplete } from "@/lib/db/profiles";
 
 export type GroupFormState = { error?: string; success?: string };
 
@@ -22,7 +23,7 @@ async function requireProfile() {
   if (!session?.user) redirect("/login");
 
   const profile = await getProfileByAuthUserId(session.user.id);
-  if (!profile) redirect("/onboarding");
+  if (!profile || !isProfileComplete(profile)) redirect("/onboarding");
 
   return profile;
 }
@@ -110,6 +111,17 @@ export async function rotateInviteAction(formData: FormData) {
   const profile = await requireProfile();
   await rotateInviteToken(profile.id, groupId);
   revalidatePath(`/groups/${groupId}`);
+}
+
+export async function toggleFavoriteAction(formData: FormData) {
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return;
+
+  const profile = await requireProfile();
+  await toggleFavoriteGroup(profile.id, groupId);
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function addGroupFriendAction(

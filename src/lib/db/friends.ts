@@ -1,6 +1,6 @@
 import { and, eq, inArray, or } from "drizzle-orm";
 import { getDb } from "./index";
-import type { Profile } from "./profiles";
+import { toProfile, type Profile } from "./profiles";
 import { friendships, profiles } from "./schema";
 
 export type FriendRequest = {
@@ -35,7 +35,7 @@ export async function sendFriendRequest(
     .limit(1);
 
   if (!target) return { ok: false, error: "No user has that friend code." };
-  return sendFriendRequestToProfile(profileId, target);
+  return sendFriendRequestToProfile(profileId, toProfile(target));
 }
 
 export async function sendFriendRequestToProfile(
@@ -43,16 +43,17 @@ export async function sendFriendRequestToProfile(
   target: Profile | string,
 ): Promise<AddFriendResult> {
   const db = getDb();
-  const person =
-    typeof target === "string"
-      ? (
-          await db
-            .select()
-            .from(profiles)
-            .where(eq(profiles.id, target))
-            .limit(1)
-        )[0]
-      : target;
+  let person: Profile | null;
+  if (typeof target === "string") {
+    const [row] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, target))
+      .limit(1);
+    person = row ? toProfile(row) : null;
+  } else {
+    person = target;
+  }
 
   if (!person) return { ok: false, error: "That person is not on Blowing Off Steam." };
   if (person.id === profileId) {
@@ -131,7 +132,7 @@ export async function listFriends(profileId: string): Promise<Profile[]> {
     );
 
   return [...asRequester, ...asAddressee]
-    .map((row) => row.profile)
+    .map((row) => toProfile(row.profile))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
@@ -149,7 +150,10 @@ export async function listIncomingRequests(
       ),
     );
 
-  return rows;
+  return rows.map((row) => ({
+    profile: toProfile(row.profile),
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function listOutgoingRequests(
@@ -166,7 +170,10 @@ export async function listOutgoingRequests(
       ),
     );
 
-  return rows;
+  return rows.map((row) => ({
+    profile: toProfile(row.profile),
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function areFriends(

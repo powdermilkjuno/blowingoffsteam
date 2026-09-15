@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth/server";
 import { getGroupByToken, getMembership } from "@/lib/db/groups";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -17,11 +16,7 @@ export default async function GroupJoinPage({
   params: Promise<{ token: string }>;
   searchParams: Promise<{ error?: string | string[] }>;
 }) {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
-
-  const viewer = await getProfileByAuthUserId(session.user.id);
-  if (!viewer) redirect("/onboarding");
+  const viewer = await requireCompleteProfile();
 
   const { token } = await params;
   const paramsError = (await searchParams).error;
