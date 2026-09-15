@@ -22,7 +22,7 @@ export default async function LeaderboardPage() {
     >
       <PageIntro kicker="Lowest hours" title="Leaderboard" />
 
-      <Card className="corners p-5" radius="sm">
+      <Card className="corners p-4 lg:p-5" radius="sm">
         <LeaderboardTabs
           group={view.group}
           friends={view.friends}

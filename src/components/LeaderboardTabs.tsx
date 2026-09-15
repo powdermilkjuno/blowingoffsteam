@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   LeaderboardBoards,
   LeaderboardEntry,
@@ -17,6 +17,24 @@ const tabs = [
   { key: "month", label: "This month" },
   { key: "all", label: "All time" },
 ] as const;
+
+// Tailwind's `lg` breakpoint (1024px) — below this we swap to a smaller
+// chart variant instead of letting a desktop-sized chart force overflow.
+const MOBILE_QUERY = "(max-width: 1023px)";
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    setIsMobile(mql.matches);
+    const listener = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", listener);
+    return () => mql.removeEventListener("change", listener);
+  }, []);
+
+  return isMobile;
+}
 
 function goalForPeriod(
   period: keyof LeaderboardBoards,
@@ -45,7 +63,7 @@ function PeriodTabs({
           key={tab.key}
           type="button"
           onClick={() => onPeriod(tab.key)}
-          className={`rounded px-3 py-1.5 text-sm transition-colors ${
+          className={`rounded-md px-4 py-2.5 text-sm transition-colors lg:rounded lg:px-3 lg:py-1.5 ${
             period === tab.key
               ? "bg-signal text-ink"
               : "text-paper hover:bg-raised hover:text-signal"
@@ -75,6 +93,8 @@ export function LeaderboardBoard({
 }) {
   const tint = accent ? GROUP_ACCENTS[accent] : null;
   const topFive = rows.slice(0, 5);
+  const isMobile = useIsMobile();
+  const effectiveChartSize = isMobile ? "sm" : chartSize;
 
   return (
     <div
@@ -85,7 +105,7 @@ export function LeaderboardBoard({
       }
     >
       <h3
-        className={`text-center font-pixel text-base tracking-wide ${tint?.title ?? "text-clay"}`}
+        className={`text-center font-pixel text-lg tracking-wide lg:text-base ${tint?.title ?? "text-clay"}`}
       >
         {title}
       </h3>
@@ -93,15 +113,20 @@ export function LeaderboardBoard({
         <p className="mt-2 text-center text-xs text-muted">{description}</p>
       ) : null}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
-        <TopFiveChart rows={topFive} goal={goal} size={chartSize} embedded={Boolean(tint)} />
+      <div className="mt-6 grid gap-5 lg:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
+        <TopFiveChart
+          rows={topFive}
+          goal={goal}
+          size={effectiveChartSize}
+          embedded={Boolean(tint)}
+        />
 
         <div>
-          <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[10px] tracking-wide text-fern">
-            <span className="w-14 shrink-0">Rank</span>
-            <span className="w-7 shrink-0" />
+          <div className="flex items-center gap-3 px-3 pb-2 font-pixel text-[11px] tracking-wide text-fern lg:gap-3 lg:px-4 lg:text-[10px]">
+            <span className="w-12 shrink-0 lg:w-14">Rank</span>
+            <span className="w-8 shrink-0 lg:w-7" />
             <span className="flex-1">Name</span>
-            <span className="w-24 shrink-0 text-right">Hours</span>
+            <span className="w-20 shrink-0 text-right lg:w-24">Hours</span>
           </div>
 
           {rows.length === 0 ? (
