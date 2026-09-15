@@ -90,6 +90,7 @@ export default function HighScoreRow({
         size={28}
         className={isUser ? "bg-signal/25 text-signal" : ""}
         frame={frame}
+        font={font}
       />
 
       <span className="min-w-0 flex-1">

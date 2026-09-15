@@ -94,6 +94,7 @@ export default async function GroupsPage() {
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
+                  font={row.profile.equippedFont}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
@@ -207,6 +208,7 @@ function GroupOverviewCard({
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
                 frame={row.profile.equippedFrame}
+                font={row.profile.equippedFont}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio

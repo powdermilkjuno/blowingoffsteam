@@ -46,6 +46,7 @@ export function PlaytimeView({
           avatarUrl={profile.avatarUrl}
           size={56}
           frame={profile.equippedFrame}
+          font={profile.equippedFont}
         />
 
         <div className="min-w-0 flex-1">
