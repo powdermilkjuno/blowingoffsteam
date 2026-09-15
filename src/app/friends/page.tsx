@@ -80,7 +80,7 @@ export default async function FriendsPage() {
                   bio={sender.bio}
                   avatarUrl={sender.avatarUrl}
                   frame={sender.equippedFrame}
-                  font={sender.equippedFont}
+                  font={sender.equippedFont} nameColor={sender.equippedNameColor}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export default async function FriendsPage() {
                     name={sender.displayName}
                     bio={sender.bio}
                     className="truncate text-paper"
-                    font={sender.equippedFont}
+                    font={sender.equippedFont} nameColor={sender.equippedNameColor}
                   />
                   <p className="text-xs text-muted">@{sender.username}</p>
                 </div>
@@ -135,7 +135,7 @@ export default async function FriendsPage() {
                   bio={target.bio}
                   avatarUrl={target.avatarUrl}
                   frame={target.equippedFrame}
-                  font={target.equippedFont}
+                  font={target.equippedFont} nameColor={target.equippedNameColor}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -143,7 +143,7 @@ export default async function FriendsPage() {
                     name={target.displayName}
                     bio={target.bio}
                     className="truncate text-paper"
-                    font={target.equippedFont}
+                    font={target.equippedFont} nameColor={target.equippedNameColor}
                   />
                   <p className="text-xs text-muted">@{target.username}</p>
                 </div>
@@ -186,7 +186,7 @@ export default async function FriendsPage() {
                   bio={friend.bio}
                   avatarUrl={friend.avatarUrl}
                   frame={friend.equippedFrame}
-                  font={friend.equippedFont}
+                  font={friend.equippedFont} nameColor={friend.equippedNameColor}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -195,7 +195,7 @@ export default async function FriendsPage() {
                     bio={friend.bio}
                     href={`/u/${friend.username}`}
                     className="truncate text-paper hover:text-signal"
-                    font={friend.equippedFont}
+                    font={friend.equippedFont} nameColor={friend.equippedNameColor}
                   />
                   <BadgeRow
                     archetype={friend.archetype}

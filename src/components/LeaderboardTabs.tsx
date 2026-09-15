@@ -119,6 +119,7 @@ function Board({
               caps={row.caps}
               frame={row.frame}
               font={row.font}
+              nameColor={row.nameColor}
             />
           ))}
         </div>

@@ -94,14 +94,14 @@ export default async function GroupsPage() {
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
-                  font={row.profile.equippedFont}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate text-paper"
-                    font={row.profile.equippedFont}
+                    font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                   />
                   <p className="text-xs text-muted">
                     wants to join {row.group.name}
@@ -208,14 +208,14 @@ function GroupOverviewCard({
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
                 frame={row.profile.equippedFrame}
-                font={row.profile.equippedFont}
+                font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   className="truncate"
-                  font={row.profile.equippedFont}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                 />
               </div>
               <span className="tabular-nums">

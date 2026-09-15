@@ -8,9 +8,23 @@ export const GROUP_ACCENT_IDS = [
   "ice",
   "violet",
   "rose",
+  "gold",
+  "teal",
+  "indigo",
+  "blush",
+  "steel",
+  "sky",
 ] as const;
 
 export type GroupAccent = (typeof GROUP_ACCENT_IDS)[number];
+
+export const FREE_GROUP_ACCENTS: ReadonlySet<GroupAccent> = new Set([
+  "clay",
+  "fern",
+  "signal",
+  "moss",
+  "paper",
+]);
 
 export const GROUP_ACCENTS: Record<
   GroupAccent,
@@ -69,6 +83,42 @@ export const GROUP_ACCENTS: Record<
     swatch: "bg-rose",
     card: "border border-rose/70 bg-rose/20",
     title: "text-rose",
+  },
+  gold: {
+    label: "Gold",
+    swatch: "bg-gold",
+    card: "border border-gold/70 bg-gold/20",
+    title: "text-gold",
+  },
+  teal: {
+    label: "Teal",
+    swatch: "bg-teal",
+    card: "border border-teal/70 bg-teal/20",
+    title: "text-teal",
+  },
+  indigo: {
+    label: "Indigo",
+    swatch: "bg-indigo",
+    card: "border border-indigo/70 bg-indigo/20",
+    title: "text-indigo",
+  },
+  blush: {
+    label: "Blush",
+    swatch: "bg-blush",
+    card: "border border-blush/70 bg-blush/20",
+    title: "text-blush",
+  },
+  steel: {
+    label: "Steel",
+    swatch: "bg-steel",
+    card: "border border-steel/70 bg-steel/20",
+    title: "text-steel",
+  },
+  sky: {
+    label: "Sky",
+    swatch: "bg-sky",
+    card: "border border-sky/70 bg-sky/20",
+    title: "text-sky",
   },
 };
 

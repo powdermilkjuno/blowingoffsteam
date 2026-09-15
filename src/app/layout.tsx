@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import {
+  Fraunces,
   Geist,
   Geist_Mono,
   JetBrains_Mono,
   Libre_Baskerville,
+  Orbitron,
   Press_Start_2P,
+  Space_Grotesk,
+  Special_Elite,
+  VT323,
 } from "next/font/google";
 import "./globals.css";
 
@@ -39,6 +44,41 @@ const libreBaskerville = Libre_Baskerville({
   display: "swap",
 });
 
+const vt323 = VT323({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-arcade",
+  display: "swap",
+});
+
+const specialElite = Special_Elite({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-typewriter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-grotesk",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-sci",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Blowing Off Steam — track your playtime",
   description:
@@ -54,8 +94,12 @@ const themeInitScript = `
     document.documentElement.classList.add(theme);
     var match = document.cookie.match(/(?:^|; )bos-site-pack=([^;]*)/);
     var pack = match ? decodeURIComponent(match[1]) : "default";
-    if (pack !== "dusk" && pack !== "ember" && pack !== "terminal") pack = "default";
+    var packs = { dusk:1, ember:1, terminal:1, midnight:1, sakura:1, slate:1, honey:1, tide:1 };
+    if (!packs[pack]) pack = "default";
     document.documentElement.setAttribute("data-site-pack", pack);
+    var scenes = { dusk:"dusk", ember:"embers", terminal:"canopy", midnight:"galaxy", sakura:"blossom", slate:"fog", honey:"meadow", tide:"harbor" };
+    var scene = scenes[pack] || "none";
+    document.documentElement.setAttribute("data-backdrop", scene);
   } catch (err) {}
 })();
 `;
@@ -64,7 +108,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${pressStart.variable} ${libreBaskerville.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${pressStart.variable} ${libreBaskerville.variable} ${vt323.variable} ${specialElite.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${orbitron.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

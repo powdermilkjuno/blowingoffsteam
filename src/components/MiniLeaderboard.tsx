@@ -97,6 +97,7 @@ function MiniRow({ rank, row }: { rank: number; row: LeaderboardEntry }) {
       bio={row.bio}
       frame={row.frame}
       font={row.font}
+      nameColor={row.nameColor}
     />
   );
 }

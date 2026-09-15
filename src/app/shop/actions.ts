@@ -7,8 +7,10 @@ import { auth } from "@/lib/auth/server";
 import { getProfileByAuthUserId, isProfileComplete } from "@/lib/db/profiles";
 import { buyItem, equipItem } from "@/lib/db/shop";
 import {
+  BACKDROP_COOKIE,
   SITE_PACK_COOKIE,
   getShopItem,
+  sceneForTheme,
   sitePackAttr,
 } from "@/lib/shop-catalog";
 
@@ -56,6 +58,11 @@ export async function equipShopItemAction(
   if (item?.kind === "site_theme") {
     const store = await cookies();
     store.set(SITE_PACK_COOKIE, sitePackAttr(item.id), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+    store.set(BACKDROP_COOKIE, sceneForTheme(item.id), {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
