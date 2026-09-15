@@ -16,10 +16,14 @@ export function PlaytimeView({
   data,
   viewerIsOwner,
   leaderboard,
+  leaderboardTitle = "Leaderboard",
+  leaderboardHref = "/leaderboard",
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
   leaderboard?: LeaderboardEntry[];
+  leaderboardTitle?: string;
+  leaderboardHref?: string;
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
@@ -127,8 +131,16 @@ export function PlaytimeView({
 
       {leaderboard ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="h-full lg:col-span-2">{profileCard}</div>
-          <MiniLeaderboard entries={leaderboard} />
+          <div className="h-full lg:col-span-2">
+            <MiniLeaderboard
+              entries={leaderboard}
+              title={leaderboardTitle}
+              href={leaderboardHref}
+              featured
+              actionLabel={leaderboardHref.startsWith("/groups/") ? "Open group" : "View all"}
+            />
+          </div>
+          {profileCard}
         </div>
       ) : (
         profileCard
