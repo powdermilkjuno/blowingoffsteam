@@ -24,6 +24,7 @@ import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
 import { BadgeRow } from "@/components/StreakBadge";
 import { AddGroupFriendButton } from "../add-group-friend-button";
@@ -170,7 +171,11 @@ export default async function GroupPage({
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-paper">{row.profile.displayName}</p>
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate text-paper"
+                  />
                   <p className="text-xs text-muted">@{row.profile.username}</p>
                 </div>
                 <form action={acceptJoinAction}>
@@ -218,7 +223,11 @@ export default async function GroupPage({
                 avatarUrl={row.profile.avatarUrl}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate">{row.profile.displayName}</p>
+                <NameWithBio
+                  name={row.profile.displayName}
+                  bio={row.profile.bio}
+                  className="truncate"
+                />
                 <BadgeRow
                   archetype={row.profile.archetype}
                   streaks={streaksById.get(row.profile.id)}
@@ -257,7 +266,11 @@ export default async function GroupPage({
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate">{row.profile.displayName}</p>
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate"
+                  />
                 </div>
                 <span className="text-xs text-muted">
                   {formatPlaytime(row.minutes)}
@@ -289,16 +302,18 @@ export default async function GroupPage({
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (
-                    <Link
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
                       href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
                       className="truncate text-paper hover:text-signal"
-                    >
-                      {member.profile.displayName}
-                    </Link>
+                    />
                   ) : (
-                    <p className="truncate text-paper">
-                      {member.profile.displayName}
-                    </p>
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
+                      className="truncate text-paper"
+                    />
                   )}
                   <p className="text-xs text-muted">
                     @{member.profile.username}

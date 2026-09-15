@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import * as Tooltip from "@radix-ui/react-tooltip";
+import BioHover from "@/components/BioHover";
 
 function initials(name: string): string {
   return name
@@ -26,7 +26,6 @@ export default function AvatarWithBio({
   size?: number;
   className?: string;
 }) {
-  const trimmed = bio?.trim() ?? "";
   const box = {
     width: size,
     height: size,
@@ -52,29 +51,9 @@ export default function AvatarWithBio({
     </span>
   );
 
-  if (!trimmed) {
-    return <span className="inline-flex shrink-0">{avatar}</span>;
-  }
-
   return (
-    <Tooltip.Provider delayDuration={200}>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
-          <span className="inline-flex shrink-0 cursor-help">{avatar}</span>
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            sideOffset={8}
-            className="z-50 max-w-xs rounded-sm border-2 border-[#0b1020] bg-[#fff8a8] px-2.5 py-2 text-xs leading-relaxed text-[#0b1020] shadow-[3px_3px_0_#0b1020]"
-          >
-            <p className="font-pixel text-[10px] tracking-wide text-[#ff2d8a]">
-              {name}
-            </p>
-            <p className="mt-1 text-[#0b1020]/85">{trimmed}</p>
-            <Tooltip.Arrow className="fill-[#fff8a8]" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+    <BioHover name={name} bio={bio}>
+      <span className="inline-flex shrink-0">{avatar}</span>
+    </BioHover>
   );
 }

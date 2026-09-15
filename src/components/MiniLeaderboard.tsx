@@ -21,24 +21,18 @@ export default function MiniLeaderboard({
 
   return (
     <Card className="corners flex h-full flex-col p-5" radius="lg">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm text-paper">{title}</h2>
-        <Link href={href} className="text-xs text-fern hover:text-signal">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-sm text-paper">{title}</h2>
+          <p className="mt-0.5 text-[10px] text-muted">Today</p>
+        </div>
+        <Link href={href} className="shrink-0 text-xs text-fern hover:text-signal">
           {actionLabel}
         </Link>
       </div>
 
       <div className="scanlines -mx-5 -mb-5 mt-4 flex-1 overflow-visible border-t border-line bg-raised pb-5 pt-5">
-        <h3
-          className={`text-center font-pixel tracking-wide text-clay ${
-            featured ? "text-base" : "text-sm"
-          }`}
-        >
-          {title}
-        </h3>
-        <p className="mt-1 text-center text-[10px] text-muted">Today</p>
-
-        <div className="mt-5 flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
+        <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
           <span className="w-14 shrink-0">Rank</span>
           <span className="w-7 shrink-0" />
           <span className="flex-1">Name</span>

@@ -2,6 +2,7 @@ import type { Archetype } from "@/lib/db/profiles";
 import type { Streaks } from "@/lib/streaks";
 import { BadgeRow } from "@/components/StreakBadge";
 import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -87,7 +88,11 @@ export default function HighScoreRow({
       />
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate normal-case">{name}</span>
+        <NameWithBio
+          name={name}
+          bio={bio}
+          className="block truncate normal-case"
+        />
         {showBadges ? (
           <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />
         ) : null}
