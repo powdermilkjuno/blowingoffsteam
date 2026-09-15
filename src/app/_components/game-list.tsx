@@ -13,9 +13,15 @@ import { recencyUnix } from "@/lib/playtime-windows";
 const SORT_STORAGE_KEY = "bos_game_sort";
 const COLLAPSED_COUNT = 10;
 
-export type GameSort = "last-played" | "lifetime" | "this-week";
+export type GameSort = "today" | "last-played" | "lifetime" | "this-week";
 
 function sortGames(games: DashboardGame[], sort: GameSort): DashboardGame[] {
+  if (sort === "today") {
+    return games
+      .filter((game) => game.todayMinutes > 0)
+      .sort((a, b) => b.todayMinutes - a.todayMinutes);
+  }
+
   return [...games].sort((a, b) => {
     if (sort === "last-played") {
       const last = recencyUnix(b) - recencyUnix(a);
@@ -43,7 +49,12 @@ export function GameList({
 
   useEffect(() => {
     const saved = window.localStorage.getItem(SORT_STORAGE_KEY);
-    if (saved === "last-played" || saved === "lifetime" || saved === "this-week") {
+    if (
+      saved === "today" ||
+      saved === "last-played" ||
+      saved === "lifetime" ||
+      saved === "this-week"
+    ) {
       setSort(saved);
     }
   }, []);
@@ -63,6 +74,12 @@ export function GameList({
         <h2 className="kicker">Games</h2>
         <div className="flex items-center gap-3">
           <div className="flex overflow-hidden rounded-sm border border-line text-xs">
+            <SortButton
+              active={sort === "today"}
+              onClick={() => chooseSort("today")}
+            >
+              Today
+            </SortButton>
             <SortButton
               active={sort === "last-played"}
               onClick={() => chooseSort("last-played")}
@@ -87,52 +104,62 @@ export function GameList({
       </header>
 
       <ul className="divide-y divide-line">
-        {visible.map((game) => (
-          <li
-            key={game.appId}
-            className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
-          >
-            {game.iconUrl ? (
-              <Image
-                src={game.iconUrl}
-                alt=""
-                width={32}
-                height={32}
-                className="rounded-sm"
-              />
-            ) : (
-              <div className="size-8 rounded-sm bg-raised" />
-            )}
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-paper">{game.name}</p>
-              <p className="mt-0.5 text-xs text-muted">
-                {formatPlaytime(game.todayMinutes)} today
-                {" · "}
-                {formatPlaytime(game.weekMinutes)} this week
-                {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
-                  ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
-                  : ""}
-              </p>
-              {game.lastPlayedAt ? (
-                <p className="mt-0.5 text-xs text-clay2">
-                  Last played{" "}
-                  {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
-                </p>
-              ) : game.lastHeldDay ? (
-                <p className="mt-0.5 text-xs text-clay2">
-                  Played {formatHeldDay(game.lastHeldDay)}
-                </p>
-              ) : null}
-            </div>
-
-            <p className="shrink-0 tabular-nums text-clay">
-              {formatPlaytime(
-                sort === "this-week" ? game.weekMinutes : game.playtimeMinutes
-              )}
-            </p>
+        {sort === "today" && ordered.length === 0 ? (
+          <li className="px-5 py-6 text-center text-sm text-muted">
+            Nothing played today yet.
           </li>
-        ))}
+        ) : (
+          visible.map((game) => (
+            <li
+              key={game.appId}
+              className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
+            >
+              {game.iconUrl ? (
+                <Image
+                  src={game.iconUrl}
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="rounded-sm"
+                />
+              ) : (
+                <div className="size-8 rounded-sm bg-raised" />
+              )}
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-paper">{game.name}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {formatPlaytime(game.todayMinutes)} today
+                  {" · "}
+                  {formatPlaytime(game.weekMinutes)} this week
+                  {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
+                    ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
+                    : ""}
+                </p>
+                {game.lastPlayedAt ? (
+                  <p className="mt-0.5 text-xs text-clay2">
+                    Last played{" "}
+                    {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
+                  </p>
+                ) : game.lastHeldDay ? (
+                  <p className="mt-0.5 text-xs text-clay2">
+                    Played {formatHeldDay(game.lastHeldDay)}
+                  </p>
+                ) : null}
+              </div>
+
+              <p className="shrink-0 tabular-nums text-clay">
+                {formatPlaytime(
+                  sort === "today"
+                    ? game.todayMinutes
+                    : sort === "this-week"
+                      ? game.weekMinutes
+                      : game.playtimeMinutes
+                )}
+              </p>
+            </li>
+          ))
+        )}
       </ul>
 
       {ordered.length > COLLAPSED_COUNT ? (
