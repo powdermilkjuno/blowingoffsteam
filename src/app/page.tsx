@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import Logo from "@/components/Logo";
 import Button from "@/components/Button";
 import TerminalWindow from "@/components/TerminalWindow";
@@ -15,7 +15,7 @@ const leaderboard = [
 
 export default async function LandingPage() {
   const { data: session } = await auth.getSession();
-  const signedIn = Boolean(session?.user);
+  if (session?.user) redirect("/dashboard");
 
   return (
     <div className="min-h-screen">
@@ -25,20 +25,12 @@ export default async function LandingPage() {
         </span>
         <nav className="flex items-center gap-2">
           <ThemeToggle />
-          {signedIn ? (
-            <Button href="/dashboard" variant="primary">
-              Dashboard
-            </Button>
-          ) : (
-            <>
-              <Button href="/login" variant="ghost">
-                Log in
-              </Button>
-              <Button href="/signup" variant="primary">
-                Create account
-              </Button>
-            </>
-          )}
+          <Button href="/login" variant="ghost">
+            Log in
+          </Button>
+          <Button href="/signup" variant="primary">
+            Create account
+          </Button>
         </nav>
       </header>
 

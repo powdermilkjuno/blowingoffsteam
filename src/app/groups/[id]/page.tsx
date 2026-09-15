@@ -11,7 +11,6 @@ import {
   listMemberPoints,
   listPendingMembers,
   listScoresForDay,
-  rankMembersForDay,
 } from "@/lib/db/groups";
 import { GROUP_ACCENTS } from "@/lib/group-accent";
 import { listInventoryIds } from "@/lib/db/shop";
@@ -22,7 +21,7 @@ import {
 } from "@/lib/db/profiles";
 import { addUtcDays, dayStringInZone } from "@/lib/playtime-windows";
 import { requireCompleteProfile } from "@/lib/require-profile";
-import { loadStreaks } from "@/lib/streaks";
+import { loadGroupBoards } from "@/lib/dashboard-data";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
@@ -30,7 +29,7 @@ import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
 import NameWithBio from "@/components/NameWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
-import { BadgeRow } from "@/components/StreakBadge";
+import { GroupLeaderboard } from "@/components/LeaderboardTabs";
 import { AddGroupFriendButton } from "../add-group-friend-button";
 import {
   acceptJoinAction,
@@ -76,8 +75,8 @@ export default async function GroupPage({
   const membership = await getMembership(group.id, viewer.id);
   if (!membership || membership.status !== "accepted") {
     return (
-      <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
-        <Card className="corners space-y-3 p-6">
+      <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme} wide>
+        <Card tone="plain" className={`corners space-y-3 p-6 ${GROUP_ACCENTS[group.accent].card}`}>
           <h1 className="text-sm text-paper">You are not in {group.name}</h1>
           <p className="text-sm text-muted">
             Ask the owner for the join link, or wait if you already requested.
@@ -109,21 +108,17 @@ export default async function GroupPage({
     pickerAccents.unshift(group.accent);
   }
 
-  const [live, lastScores, friendships, memberStreaks] = await Promise.all([
-    rankMembersForDay(members, today),
+  const [boards, lastScores, friendships] = await Promise.all([
+    loadGroupBoards(
+      viewer,
+      members.map((member) => member.profile),
+    ),
     latestDay ? listScoresForDay(group.id, latestDay) : Promise.resolve([]),
     getFriendshipStatuses(
       viewer.id,
       members.map((member) => member.profile.id),
     ),
-    Promise.all(
-      members.map(async (member) => [
-        member.profile.id,
-        await loadStreaks(member.profile),
-      ] as const),
-    ),
   ]);
-  const streaksById = new Map(memberStreaks);
 
   const profileById = new Map(
     members.map((member) => [member.profile.id, member.profile]),
@@ -140,7 +135,7 @@ export default async function GroupPage({
   const inviteUrl = `${origin}/groups/join/${group.inviteToken}`;
 
   return (
-    <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
+    <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme} wide>
       <Link href="/groups" className="text-xs text-fern hover:text-signal">
         ← Back to groups
       </Link>
@@ -161,8 +156,22 @@ export default async function GroupPage({
         <FavoriteStarButton favorited={membership.favorited} labeled />
       </form>
 
+      <Card tone="plain" className={`corners p-5 ${accent.card}`} radius="sm">
+        <GroupLeaderboard
+          boards={boards}
+          title={group.name}
+          description={group.description || undefined}
+          accent={group.accent}
+          goalHours={{
+            today: viewer.capDayMinutes,
+            week: viewer.capWeekMinutes,
+            month: viewer.capMonthMinutes,
+          }}
+        />
+      </Card>
+
       {canEdit ? (
-        <Card className="corners space-y-3 p-6">
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
           <h2 className="text-sm text-paper">Group</h2>
           <GroupPresentationForm
             groupId={group.id}
@@ -174,7 +183,7 @@ export default async function GroupPage({
       ) : null}
 
       {isOwner ? (
-        <Card className="corners space-y-3 p-6">
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
           <h2 className="text-sm text-paper">Join link</h2>
           <CopyInviteLink url={inviteUrl} />
           <form action={rotateInviteAction}>
@@ -187,7 +196,7 @@ export default async function GroupPage({
       ) : null}
 
       {isOwner && pending.length > 0 ? (
-        <Card className="corners space-y-3 p-6">
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
           <h2 className="text-sm text-paper">
             Join requests ({pending.length})
           </h2>
@@ -236,51 +245,7 @@ export default async function GroupPage({
         </Card>
       ) : null}
 
-      <Card className="corners p-5" radius="sm">
-        <h2 className="text-sm text-paper">Today</h2>
-        <p className="mt-1 text-xs text-muted">
-          Live held minutes. Points land when cron scores yesterday.
-        </p>
-        <div className="mt-4 divide-y divide-line">
-          {live.map((row) => (
-            <div
-              key={row.profile.id}
-              className={`flex items-center gap-3 py-2.5 text-sm ${
-                row.profile.id === viewer.id ? "text-signal" : "text-paper"
-              }`}
-            >
-              <span className="w-10 shrink-0 text-xs text-clay">
-                {ordinal(row.place)}
-              </span>
-              <AvatarWithBio
-                name={row.profile.displayName}
-                bio={row.profile.bio}
-                avatarUrl={row.profile.avatarUrl}
-                frame={row.profile.equippedFrame}
-                font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
-              />
-              <div className="min-w-0 flex-1">
-                <NameWithBio
-                  name={row.profile.displayName}
-                  bio={row.profile.bio}
-                  className="truncate"
-                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
-                />
-                <BadgeRow
-                  archetype={row.profile.archetype}
-                  streaks={streaksById.get(row.profile.id)}
-                  caps={row.profile}
-                />
-              </div>
-              <span className="tabular-nums">
-                {formatPlaytime(row.minutes)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="corners p-5" radius="sm">
+      <Card tone="plain" className={`corners p-5 ${accent.card}`} radius="sm">
         <h2 className="text-sm text-paper">
           {latestDay
             ? `Last scored · ${formatHeldDay(latestDay)}`
@@ -325,7 +290,7 @@ export default async function GroupPage({
         )}
       </Card>
 
-      <Card className="corners space-y-3 p-6">
+      <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
         <h2 className="text-sm text-paper">Members ({members.length})</h2>
         <ul className="divide-y divide-line">
           {members.map((member) => {

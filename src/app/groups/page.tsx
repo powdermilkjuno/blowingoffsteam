@@ -8,6 +8,7 @@ import {
   type RankedMember,
 } from "@/lib/db/groups";
 import { formatHeldDay, formatPlaytime } from "@/lib/db/profiles";
+import { hoursFromMinutes } from "@/lib/hours";
 import { dayStringInZone } from "@/lib/playtime-windows";
 import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
@@ -17,6 +18,8 @@ import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
 import NameWithBio from "@/components/NameWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
+import TopFiveChart from "@/components/TopFiveChart";
+import type { LeaderboardEntry } from "@/lib/dashboard-data";
 import { GROUP_ACCENTS } from "@/lib/group-accent";
 import { acceptJoinAction, declineJoinAction, toggleFavoriteAction } from "./actions";
 import { CreateGroupForm } from "./create-group-form";
@@ -188,6 +191,23 @@ function GroupOverviewCard({
           <input type="hidden" name="groupId" value={group.id} />
           <FavoriteStarButton favorited={group.favorited} />
         </form>
+      </div>
+
+      <div className="mt-4">
+        <TopFiveChart
+          rows={live.slice(0, 5).map((row): LeaderboardEntry => ({
+            name: row.profile.displayName,
+            hours: hoursFromMinutes(row.minutes),
+            avatarUrl: row.profile.avatarUrl || undefined,
+            isUser: row.profile.id === viewerId,
+            bio: row.profile.bio,
+            frame: row.profile.equippedFrame,
+            font: row.profile.equippedFont,
+            nameColor: row.profile.equippedNameColor,
+          }))}
+          size="xs"
+          embedded
+        />
       </div>
 
       <div className="mt-4 divide-y divide-line border-t border-line">

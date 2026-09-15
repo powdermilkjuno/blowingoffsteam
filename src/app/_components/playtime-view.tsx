@@ -6,13 +6,27 @@ import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import StatPill from "@/components/StatPill";
 import MiniLeaderboard from "@/components/MiniLeaderboard";
-import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
 import AvatarWithBio from "@/components/AvatarWithBio";
 import NameWithBio from "@/components/NameWithBio";
-import { BadgeRow } from "@/components/StreakBadge";
+import { BadgeLegend } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
+
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}TH`;
+  switch (n % 10) {
+    case 1:
+      return `${n}ST`;
+    case 2:
+      return `${n}ND`;
+    case 3:
+      return `${n}RD`;
+    default:
+      return `${n}TH`;
+  }
+}
 
 export function PlaytimeView({
   data,
@@ -22,6 +36,7 @@ export function PlaytimeView({
   leaderboardHref = "/leaderboard",
   leaderboardAccent,
   leaderboardDescription,
+  leaderboardGoalMinutes,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
@@ -30,6 +45,7 @@ export function PlaytimeView({
   leaderboardHref?: string;
   leaderboardAccent?: GroupAccent;
   leaderboardDescription?: string;
+  leaderboardGoalMinutes?: number | null;
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
@@ -68,6 +84,14 @@ export function PlaytimeView({
           ) : (
             <p className="text-xs text-muted">No Steam link yet</p>
           )}
+          {userEntry ? (
+            <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 font-pixel text-[11px] tracking-wide">
+              <span className="shrink-0 text-clay">{ordinal(userRank + 1)}</span>
+              <span className="shrink-0 text-muted">
+                {userEntry.hours}h today
+              </span>
+            </p>
+          ) : null}
         </div>
 
         {steam && viewerIsOwner && (
@@ -78,31 +102,14 @@ export function PlaytimeView({
         )}
       </div>
 
-      {userEntry ? (
-        <div className="mt-auto border-t border-line pt-5">
-          <div className="-mx-4">
-            <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
-              <span className="w-14 shrink-0">Rank</span>
-              <span className="w-7 shrink-0" />
-              <span className="flex-1">Name</span>
-              <span className="w-24 shrink-0 text-right">Hours</span>
-            </div>
-            <HighScoreRow
-              rank={userRank + 1}
-              name={userEntry.name}
-              hours={userEntry.hours}
-              avatarUrl={userEntry.avatarUrl}
-              isUser
-              bio={userEntry.bio}
-              frame={userEntry.frame}
-              font={userEntry.font}
-              nameColor={userEntry.nameColor}
-            />
-          </div>
-        </div>
-      ) : (
-        steam && (
-          <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
+      <div className="mt-5 border-t border-line pt-5">
+        <BadgeLegend
+          archetype={profile.archetype}
+          streaks={data.streaks}
+          caps={profile}
+        />
+        {!userEntry && steam ? (
+          <div className="mt-5 grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
             <div>
               <p className="text-xs text-fern">This week</p>
               <p className="mt-1.5 text-xl tracking-tight text-paper">
@@ -123,8 +130,8 @@ export function PlaytimeView({
               <p className="mt-1 text-xs text-muted">from Steam</p>
             </div>
           </div>
-        )
-      )}
+        ) : null}
+      </div>
     </Card>
   );
 
@@ -133,18 +140,14 @@ export function PlaytimeView({
       <PageIntro
         kicker={viewerIsOwner ? "Welcome back" : "Friend"}
         title={
-          <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} nameColor={profile.equippedNameColor} />
-        }
-        aside={
-          <BadgeRow
-            archetype={profile.archetype}
-            streaks={data.streaks}
-            caps={profile}
-            className=""
-          />
+          viewerIsOwner ? (
+            "Dashboard"
+          ) : (
+            <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} nameColor={profile.equippedNameColor} />
+          )
         }
       >
-        @{profile.username}
+        {viewerIsOwner ? null : `@${profile.username}`}
       </PageIntro>
 
       {leaderboard ? (
@@ -155,9 +158,11 @@ export function PlaytimeView({
               title={leaderboardTitle}
               href={leaderboardHref}
               featured
+              chartOnly
               actionLabel={leaderboardHref.startsWith("/groups/") ? "Open group" : "View all"}
               accent={leaderboardAccent}
               description={leaderboardDescription}
+              goalMinutes={leaderboardGoalMinutes}
             />
           </div>
           {profileCard}
