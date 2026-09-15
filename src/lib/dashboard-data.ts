@@ -142,6 +142,7 @@ export type LeaderboardEntry = {
   };
   frame?: string;
   font?: string;
+  nameColor?: string;
 };
 
 export type LeaderboardBoards = {
@@ -186,6 +187,7 @@ type ScoredPerson = {
   caps: LeaderboardEntry["caps"];
   frame: string;
   font: string;
+  nameColor: string;
   today: number;
   week: number;
   month: number;
@@ -204,6 +206,7 @@ function rankBoard(
     caps: LeaderboardEntry["caps"];
     frame?: string;
     font?: string;
+    nameColor?: string;
   }[],
 ): LeaderboardEntry[] {
   return [...rows]
@@ -219,6 +222,7 @@ function rankBoard(
       caps: row.caps,
       frame: row.frame,
       font: row.font,
+      nameColor: row.nameColor,
     }));
 }
 
@@ -233,6 +237,7 @@ function boardsFromScored(scored: ScoredPerson[]): LeaderboardBoards {
     caps: row.caps,
     frame: row.frame,
     font: row.font,
+    nameColor: row.nameColor,
   });
 
   return {
@@ -285,6 +290,7 @@ async function scorePeople(
         },
         frame: person.equippedFrame,
         font: person.equippedFont,
+        nameColor: person.equippedNameColor,
       };
     }),
   );

@@ -3,8 +3,10 @@ import { getDb } from "./index";
 import { profileInventory, profiles } from "./schema";
 import { toProfile, type Profile } from "./profiles";
 import {
+  backdropItemId,
   getShopItem,
   isOwned,
+  sceneForTheme,
   type ShopItem,
 } from "../shop-catalog";
 
@@ -94,8 +96,13 @@ export async function equipItem(
       : item.kind === "font"
         ? { equippedFont: item.id }
         : item.kind === "site_theme"
-          ? { equippedSiteTheme: item.id }
-          : null;
+          ? {
+              equippedSiteTheme: item.id,
+              equippedBackdrop: backdropItemId(sceneForTheme(item.id)),
+            }
+          : item.kind === "name_color"
+            ? { equippedNameColor: item.id }
+            : null;
 
   if (!patch) {
     return {

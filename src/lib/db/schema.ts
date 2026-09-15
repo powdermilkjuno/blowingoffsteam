@@ -31,6 +31,8 @@ export const profiles = pgTable("profiles", {
   equippedFrame: text("equipped_frame").notNull().default("frame:none"),
   equippedFont: text("equipped_font").notNull().default("font:mono"),
   equippedSiteTheme: text("equipped_site_theme").notNull().default("theme:default"),
+  equippedNameColor: text("equipped_name_color").notNull().default("name:default"),
+  equippedBackdrop: text("equipped_backdrop").notNull().default("backdrop:none"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

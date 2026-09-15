@@ -22,6 +22,7 @@ export default function AvatarWithBio({
   className = "",
   frame,
   font,
+  nameColor,
 }: {
   name: string;
   bio?: string | null;
@@ -30,6 +31,7 @@ export default function AvatarWithBio({
   className?: string;
   frame?: string | null;
   font?: string | null;
+  nameColor?: string | null;
 }) {
   const box = {
     width: size,
@@ -59,8 +61,8 @@ export default function AvatarWithBio({
   const ring = frameClass(frame);
 
   return (
-    <BioHover name={name} bio={bio} font={font}>
-      <span className={`inline-flex shrink-0 rounded ${ring}`}>{avatar}</span>
+    <BioHover name={name} bio={bio} font={font} nameColor={nameColor}>
+      <span className={`relative inline-flex shrink-0 rounded ${ring}`}>{avatar}</span>
     </BioHover>
   );
 }

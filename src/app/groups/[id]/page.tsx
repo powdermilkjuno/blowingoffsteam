@@ -202,14 +202,14 @@ export default async function GroupPage({
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
-                  font={row.profile.equippedFont}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate text-paper"
-                    font={row.profile.equippedFont}
+                    font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                   />
                   <p className="text-xs text-muted">@{row.profile.username}</p>
                 </div>
@@ -257,14 +257,14 @@ export default async function GroupPage({
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
                 frame={row.profile.equippedFrame}
-                font={row.profile.equippedFont}
+                font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   className="truncate"
-                  font={row.profile.equippedFont}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                 />
                 <BadgeRow
                   archetype={row.profile.archetype}
@@ -303,14 +303,14 @@ export default async function GroupPage({
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
-                  font={row.profile.equippedFont}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate"
-                    font={row.profile.equippedFont}
+                    font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
                   />
                 </div>
                 <span className="text-xs text-muted">
@@ -341,7 +341,7 @@ export default async function GroupPage({
                   bio={member.profile.bio}
                   avatarUrl={member.profile.avatarUrl}
                   frame={member.profile.equippedFrame}
-                  font={member.profile.equippedFont}
+                  font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (
@@ -350,14 +350,14 @@ export default async function GroupPage({
                       bio={member.profile.bio}
                       href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
                       className="truncate text-paper hover:text-signal"
-                      font={member.profile.equippedFont}
+                      font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
                     />
                   ) : (
                     <NameWithBio
                       name={member.profile.displayName}
                       bio={member.profile.bio}
                       className="truncate text-paper"
-                      font={member.profile.equippedFont}
+                      font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
                     />
                   )}
                   <p className="text-xs text-muted">

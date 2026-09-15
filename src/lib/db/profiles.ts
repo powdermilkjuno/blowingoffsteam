@@ -56,6 +56,8 @@ export type Profile = {
   equippedFrame: string;
   equippedFont: string;
   equippedSiteTheme: string;
+  equippedNameColor: string;
+  equippedBackdrop: string;
   createdAt: Date;
 };
 
@@ -186,6 +188,8 @@ export function toProfile(row: typeof profiles.$inferSelect): Profile {
     equippedFrame: row.equippedFrame || "frame:none",
     equippedFont: row.equippedFont || "font:mono",
     equippedSiteTheme: row.equippedSiteTheme || "theme:default",
+    equippedNameColor: row.equippedNameColor || "name:default",
+    equippedBackdrop: row.equippedBackdrop || "backdrop:none",
     createdAt: row.createdAt,
   };
 }

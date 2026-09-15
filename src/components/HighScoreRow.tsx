@@ -47,6 +47,7 @@ export default function HighScoreRow({
   caps,
   frame,
   font,
+  nameColor,
 }: {
   rank: number;
   name: string;
@@ -66,6 +67,7 @@ export default function HighScoreRow({
   };
   frame?: string | null;
   font?: string | null;
+  nameColor?: string | null;
 }) {
   return (
     <div
@@ -91,6 +93,7 @@ export default function HighScoreRow({
         className={isUser ? "bg-signal/25 text-signal" : ""}
         frame={frame}
         font={font}
+        nameColor={nameColor}
       />
 
       <span className="min-w-0 flex-1">
@@ -99,6 +102,7 @@ export default function HighScoreRow({
           bio={bio}
           className="block truncate normal-case"
           font={font}
+          nameColor={nameColor}
         />
         {showBadges ? (
           <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />
