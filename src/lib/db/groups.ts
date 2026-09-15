@@ -4,6 +4,11 @@ import { sumDailyMinutes } from "./daily";
 import { getDb } from "./index";
 import { toProfile, type Profile } from "./profiles";
 import {
+  isGroupAccent,
+  resolveGroupAccent,
+  type GroupAccent,
+} from "../group-accent";
+import {
   groupDailyScores,
   groupMembers,
   groups,
@@ -13,6 +18,9 @@ import {
 const INVITE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const INVITE_TOKEN_LENGTH = 12;
 const MAX_GROUP_NAME = 48;
+export const GROUP_DESCRIPTION_MAX = 120;
+
+export type GroupRole = "owner" | "co_owner" | "member";
 
 export type Group = {
   id: string;
@@ -20,27 +28,29 @@ export type Group = {
   inviteToken: string;
   ownerProfileId: string;
   timeZone: string;
+  description: string;
+  accent: GroupAccent;
   createdAt: Date;
 };
 
 export type GroupListItem = Group & {
   memberCount: number;
   myPoints: number;
-  role: "owner" | "member";
+  role: GroupRole;
   favorited: boolean;
 };
 
 export type GroupMembership = {
   groupId: string;
   profileId: string;
-  role: "owner" | "member";
+  role: GroupRole;
   status: "pending" | "accepted";
   favorited: boolean;
 };
 
 export type GroupMemberRow = {
   profile: Profile;
-  role: "owner" | "member";
+  role: GroupRole;
   status: "pending" | "accepted";
 };
 
@@ -67,6 +77,19 @@ function generateInviteToken(): string {
   return token;
 }
 
+function asRole(raw: string): GroupRole {
+  if (raw === "owner" || raw === "co_owner") return raw;
+  return "member";
+}
+
+export function isOwner(role: GroupRole): boolean {
+  return role === "owner";
+}
+
+export function canManageGroup(role: GroupRole): boolean {
+  return role === "owner" || role === "co_owner";
+}
+
 function toGroup(row: typeof groups.$inferSelect): Group {
   return {
     id: row.id,
@@ -74,6 +97,8 @@ function toGroup(row: typeof groups.$inferSelect): Group {
     inviteToken: row.inviteToken,
     ownerProfileId: row.ownerProfileId,
     timeZone: row.timeZone,
+    description: row.description ?? "",
+    accent: resolveGroupAccent(row.accent),
     createdAt: row.createdAt,
   };
 }
@@ -83,6 +108,18 @@ export function validateGroupName(raw: string): string | null {
   if (name.length < 2) return "Name must be at least 2 characters.";
   if (name.length > MAX_GROUP_NAME) {
     return `Name must be ${MAX_GROUP_NAME} characters or fewer.`;
+  }
+  return null;
+}
+
+export function normalizeGroupDescription(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim();
+}
+
+export function validateGroupDescription(raw: string): string | null {
+  const description = normalizeGroupDescription(raw);
+  if (description.length > GROUP_DESCRIPTION_MAX) {
+    return `Description must be ${GROUP_DESCRIPTION_MAX} characters or fewer.`;
   }
   return null;
 }
@@ -162,7 +199,7 @@ export async function getMembership(
   return {
     groupId: row.groupId,
     profileId: row.profileId,
-    role: row.role as "owner" | "member",
+    role: asRole(row.role),
     status: row.status as "pending" | "accepted",
     favorited: row.favorited,
   };
@@ -228,7 +265,7 @@ export async function listGroupsForProfile(
       ...toGroup(row.group),
       memberCount: countByGroup.get(row.group.id) ?? 0,
       myPoints: pointsByGroup.get(row.group.id) ?? 0,
-      role: row.role as "owner" | "member",
+      role: asRole(row.role),
       favorited: row.favorited,
     }))
     .sort((a, b) => {
@@ -283,7 +320,7 @@ export async function listAcceptedMembers(
   return rows
     .map((row) => ({
       profile: toProfile(row.profile),
-      role: row.role as "owner" | "member",
+      role: asRole(row.role),
       status: row.status as "pending" | "accepted",
     }))
     .sort((a, b) => a.profile.displayName.localeCompare(b.profile.displayName));
@@ -306,7 +343,7 @@ export async function listPendingMembers(
 
   return rows.map((row) => ({
     profile: toProfile(row.profile),
-    role: row.role as "owner" | "member",
+    role: asRole(row.role),
     status: row.status as "pending" | "accepted",
   }));
 }
@@ -468,6 +505,102 @@ export async function rotateInviteToken(
     }
   }
   return { ok: false, error: "Could not rotate the link. Try again." };
+}
+
+export async function setMemberRole(
+  actorId: string,
+  groupId: string,
+  profileId: string,
+  role: "co_owner" | "member",
+): Promise<GroupResult<true>> {
+  const actor = await getMembership(groupId, actorId);
+  if (!actor || actor.status !== "accepted" || actor.role !== "owner") {
+    return { ok: false, error: "Only the group owner can change roles." };
+  }
+  if (profileId === actorId) {
+    return { ok: false, error: "You cannot change your own role." };
+  }
+
+  const target = await getMembership(groupId, profileId);
+  if (!target || target.status !== "accepted") {
+    return { ok: false, error: "That person is not in the group." };
+  }
+  if (target.role === "owner") {
+    return { ok: false, error: "The owner cannot be demoted." };
+  }
+
+  await getDb()
+    .update(groupMembers)
+    .set({ role })
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.profileId, profileId),
+      ),
+    );
+  return { ok: true, value: true };
+}
+
+export async function kickMember(
+  actorId: string,
+  groupId: string,
+  profileId: string,
+): Promise<GroupResult<true>> {
+  const actor = await getMembership(groupId, actorId);
+  if (!actor || actor.status !== "accepted" || actor.role !== "owner") {
+    return { ok: false, error: "Only the group owner can kick members." };
+  }
+  if (profileId === actorId) {
+    return { ok: false, error: "You cannot kick yourself." };
+  }
+
+  const target = await getMembership(groupId, profileId);
+  if (!target || target.status !== "accepted") {
+    return { ok: false, error: "That person is not in the group." };
+  }
+  if (target.role === "owner") {
+    return { ok: false, error: "The owner cannot be kicked." };
+  }
+
+  await getDb()
+    .delete(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.profileId, profileId),
+      ),
+    );
+  return { ok: true, value: true };
+}
+
+export async function updateGroupPresentation(
+  actorId: string,
+  groupId: string,
+  input: { description: string; accent: string },
+): Promise<GroupResult<Group>> {
+  const actor = await getMembership(groupId, actorId);
+  if (!actor || actor.status !== "accepted" || !canManageGroup(actor.role)) {
+    return {
+      ok: false,
+      error: "Only the owner or a co-owner can edit the group.",
+    };
+  }
+
+  const description = normalizeGroupDescription(input.description);
+  const descriptionError = validateGroupDescription(description);
+  if (descriptionError) return { ok: false, error: descriptionError };
+  if (!isGroupAccent(input.accent)) {
+    return { ok: false, error: "Choose a valid accent color." };
+  }
+
+  const [updated] = await getDb()
+    .update(groups)
+    .set({ description, accent: input.accent })
+    .where(eq(groups.id, groupId))
+    .returning();
+
+  if (!updated) return { ok: false, error: "That group no longer exists." };
+  return { ok: true, value: toGroup(updated) };
 }
 
 export async function getLatestScoreDay(groupId: string): Promise<string | null> {

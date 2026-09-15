@@ -1,4 +1,5 @@
 import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
+import type { GroupAccent } from "@/lib/group-accent";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
 import Card from "@/components/Card";
@@ -19,12 +20,16 @@ export function PlaytimeView({
   leaderboard,
   leaderboardTitle = "Leaderboard",
   leaderboardHref = "/leaderboard",
+  leaderboardAccent,
+  leaderboardDescription,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
   leaderboard?: LeaderboardEntry[];
   leaderboardTitle?: string;
   leaderboardHref?: string;
+  leaderboardAccent?: GroupAccent;
+  leaderboardDescription?: string;
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
@@ -145,6 +150,8 @@ export function PlaytimeView({
               href={leaderboardHref}
               featured
               actionLabel={leaderboardHref.startsWith("/groups/") ? "Open group" : "View all"}
+              accent={leaderboardAccent}
+              description={leaderboardDescription}
             />
           </div>
           {profileCard}

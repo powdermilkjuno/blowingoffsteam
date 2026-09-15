@@ -56,6 +56,8 @@ export default async function DashboardPage({
         leaderboard={leaderboard}
         leaderboardTitle={leaderboardTitle}
         leaderboardHref={leaderboardHref}
+        leaderboardAccent={featured?.accent}
+        leaderboardDescription={featured?.description}
       />
     </AppShell>
   );

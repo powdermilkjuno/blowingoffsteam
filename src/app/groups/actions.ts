@@ -9,10 +9,13 @@ import {
   createGroup,
   declineJoinRequest,
   deleteGroup,
+  kickMember,
   leaveGroup,
   requestJoin,
   rotateInviteToken,
+  setMemberRole,
   toggleFavoriteGroup,
+  updateGroupPresentation,
 } from "@/lib/db/groups";
 import { getProfileByAuthUserId, isProfileComplete } from "@/lib/db/profiles";
 
@@ -122,6 +125,55 @@ export async function toggleFavoriteAction(formData: FormData) {
   revalidatePath("/groups");
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/dashboard");
+}
+
+export async function updateGroupPresentationAction(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return { error: "Missing group." };
+
+  const profile = await requireProfile();
+  const result = await updateGroupPresentation(profile.id, groupId, {
+    description: String(formData.get("description") ?? ""),
+    accent: String(formData.get("accent") ?? ""),
+  });
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
+  return { success: "Group updated." };
+}
+
+export async function setMemberRoleAction(formData: FormData) {
+  const groupId = String(formData.get("groupId") ?? "");
+  const profileId = String(formData.get("profileId") ?? "");
+  const role = String(formData.get("role") ?? "");
+  if (!groupId || !profileId) return;
+  if (role !== "co_owner" && role !== "member") return;
+
+  const profile = await requireProfile();
+  await setMemberRole(profile.id, groupId, profileId, role);
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
+}
+
+export async function kickMemberAction(formData: FormData) {
+  const groupId = String(formData.get("groupId") ?? "");
+  const profileId = String(formData.get("profileId") ?? "");
+  if (!groupId || !profileId) return;
+
+  const profile = await requireProfile();
+  await kickMember(profile.id, groupId, profileId);
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/leaderboard");
 }
 
 export async function addGroupFriendAction(

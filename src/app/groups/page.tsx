@@ -17,6 +17,7 @@ import PageIntro from "@/components/PageIntro";
 import AvatarWithBio from "@/components/AvatarWithBio";
 import NameWithBio from "@/components/NameWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
+import { GROUP_ACCENTS } from "@/lib/group-accent";
 import { acceptJoinAction, declineJoinAction, toggleFavoriteAction } from "./actions";
 import { CreateGroupForm } from "./create-group-form";
 
@@ -149,16 +150,21 @@ function GroupOverviewCard({
   live: RankedMember[];
   viewerId: string;
 }) {
+  const accent = GROUP_ACCENTS[group.accent];
+
   return (
-    <Card className="corners p-5" radius="sm">
+    <Card className={`corners p-5 ${accent.border}`} radius="sm">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <Link
             href={`/groups/${group.id}`}
-            className="truncate text-lg tracking-tight text-paper hover:text-signal"
+            className={`truncate text-lg tracking-tight hover:text-signal ${accent.title}`}
           >
             {group.name}
           </Link>
+          {group.description ? (
+            <p className="mt-1 text-sm text-muted">{group.description}</p>
+          ) : null}
           <p className="mt-1 text-xs text-muted">
             Live today · {formatHeldDay(today)} ·{" "}
             {group.timeZone.replaceAll("_", " ")}
@@ -166,7 +172,11 @@ function GroupOverviewCard({
           <p className="text-xs text-muted">
             {group.memberCount}{" "}
             {group.memberCount === 1 ? "member" : "members"}
-            {group.role === "owner" ? " · owner" : ""}
+            {group.role === "owner"
+              ? " · owner"
+              : group.role === "co_owner"
+                ? " · co-owner"
+                : ""}
             {" · "}
             <span className="text-signal">{group.myPoints} pts</span>
           </p>
