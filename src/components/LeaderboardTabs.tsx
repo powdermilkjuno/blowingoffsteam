@@ -113,15 +113,17 @@ export function LeaderboardBoard({
         <p className="mt-2 text-center text-xs text-muted">{description}</p>
       ) : null}
 
-      <div className="mt-6 grid gap-5 lg:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
-        <TopFiveChart
-          rows={topFive}
-          goal={goal}
-          size={effectiveChartSize}
-          embedded={Boolean(tint)}
-        />
+      <div className="mt-6 grid min-w-0 gap-5 lg:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
+        <div className="min-w-0 overflow-x-auto">
+          <TopFiveChart
+            rows={topFive}
+            goal={goal}
+            size={effectiveChartSize}
+            embedded={Boolean(tint)}
+          />
+        </div>
 
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-3 px-3 pb-2 font-pixel text-[11px] tracking-wide text-fern lg:gap-3 lg:px-4 lg:text-[10px]">
             <span className="w-12 shrink-0 lg:w-14">Rank</span>
             <span className="w-8 shrink-0 lg:w-7" />
@@ -134,7 +136,7 @@ export function LeaderboardBoard({
               No playtime to rank yet. Refresh after Steam is linked.
             </p>
           ) : (
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 overflow-x-auto">
               {rows.map((row, index) => (
                 <HighScoreRow
                   key={`${title}-${row.name}-${index}`}
@@ -144,7 +146,7 @@ export function LeaderboardBoard({
                   avatarUrl={row.avatarUrl}
                   isUser={row.isUser}
                   bio={row.bio}
-                  showBadges
+                  showBadges={!isMobile}
                   archetype={row.archetype}
                   streaks={row.streaks}
                   caps={row.caps}
@@ -225,7 +227,7 @@ export default function LeaderboardTabs({
         />
       ) : (
         <p className="mt-5 text-sm text-muted">
-          Star a group on Groups to rank it here. If you only have one group,
+          Start a group on Groups to rank it here. If you only have one group,
           it shows automatically.
         </p>
       )}
