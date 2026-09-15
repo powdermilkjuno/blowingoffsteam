@@ -90,6 +90,7 @@ export default function HighScoreRow({
       )}
 
       <span className="flex-1 truncate normal-case">{name}</span>
+
       {detailed ? (
         <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">
           <Trend delta={delta} />
