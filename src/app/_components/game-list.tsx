@@ -22,19 +22,38 @@ function sortGames(games: DashboardGame[], sort: GameSort): DashboardGame[] {
       .sort((a, b) => b.todayMinutes - a.todayMinutes);
   }
 
+  if (sort === "this-week") {
+    return games
+      .filter((game) => game.weekMinutes > 0)
+      .sort((a, b) => b.weekMinutes - a.weekMinutes);
+  }
+
   return [...games].sort((a, b) => {
     if (sort === "last-played") {
       const last = recencyUnix(b) - recencyUnix(a);
       if (last !== 0) return last;
       return b.playtimeMinutes - a.playtimeMinutes;
     }
-    if (sort === "this-week") {
-      const week = b.weekMinutes - a.weekMinutes;
-      if (week !== 0) return week;
-      return b.playtimeMinutes - a.playtimeMinutes;
-    }
     return b.playtimeMinutes - a.playtimeMinutes;
   });
+}
+
+function playtimeSegments(game: DashboardGame): string[] {
+  const segments: string[] = [];
+
+  if (game.todayMinutes > 0) {
+    segments.push(`${formatPlaytime(game.todayMinutes)} today`);
+  }
+
+  if (game.weekMinutes > 0) {
+    segments.push(`${formatPlaytime(game.weekMinutes)} this week`);
+  } else if (game.playtimeTwoWeeksMinutes > 0) {
+    segments.push(
+      `${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`,
+    );
+  }
+
+  return segments;
 }
 
 export function GameList({
@@ -75,16 +94,16 @@ export function GameList({
         <div className="flex items-center gap-3">
           <div className="flex overflow-hidden rounded-sm border border-line text-xs">
             <SortButton
-              active={sort === "today"}
-              onClick={() => chooseSort("today")}
-            >
-              Today
-            </SortButton>
-            <SortButton
               active={sort === "last-played"}
               onClick={() => chooseSort("last-played")}
             >
               Last played
+            </SortButton>
+            <SortButton
+              active={sort === "today"}
+              onClick={() => chooseSort("today")}
+            >
+              Today
             </SortButton>
             <SortButton
               active={sort === "this-week"}
@@ -104,61 +123,64 @@ export function GameList({
       </header>
 
       <ul className="divide-y divide-line">
-        {sort === "today" && ordered.length === 0 ? (
+        {(sort === "today" || sort === "this-week") && ordered.length === 0 ? (
           <li className="px-5 py-6 text-center text-sm text-muted">
-            Nothing played today yet.
+            {sort === "today"
+              ? "Nothing played today yet."
+              : "Nothing played this week yet."}
           </li>
         ) : (
-          visible.map((game) => (
-            <li
-              key={game.appId}
-              className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
-            >
-              {game.iconUrl ? (
-                <Image
-                  src={game.iconUrl}
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="rounded-sm"
-                />
-              ) : (
-                <div className="size-8 rounded-sm bg-raised" />
-              )}
+          visible.map((game) => {
+            const segments = playtimeSegments(game);
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-paper">{game.name}</p>
-                <p className="mt-0.5 text-xs text-muted">
-                  {formatPlaytime(game.todayMinutes)} today
-                  {" · "}
-                  {formatPlaytime(game.weekMinutes)} this week
-                  {game.weekMinutes === 0 && game.playtimeTwoWeeksMinutes > 0
-                    ? ` · ${formatPlaytime(game.playtimeTwoWeeksMinutes)} last 2 weeks (Steam)`
-                    : ""}
-                </p>
-                {game.lastPlayedAt ? (
-                  <p className="mt-0.5 text-xs text-clay2">
-                    Last played{" "}
-                    {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
-                  </p>
-                ) : game.lastHeldDay ? (
-                  <p className="mt-0.5 text-xs text-clay2">
-                    Played {formatHeldDay(game.lastHeldDay)}
-                  </p>
-                ) : null}
-              </div>
-
-              <p className="shrink-0 tabular-nums text-clay">
-                {formatPlaytime(
-                  sort === "today"
-                    ? game.todayMinutes
-                    : sort === "this-week"
-                      ? game.weekMinutes
-                      : game.playtimeMinutes
+            return (
+              <li
+                key={game.appId}
+                className="flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-raised/70"
+              >
+                {game.iconUrl ? (
+                  <Image
+                    src={game.iconUrl}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="rounded-sm"
+                  />
+                ) : (
+                  <div className="size-8 rounded-sm bg-raised" />
                 )}
-              </p>
-            </li>
-          ))
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-paper">{game.name}</p>
+                  {segments.length > 0 ? (
+                    <p className="mt-0.5 text-xs text-muted">
+                      {segments.join(" · ")}
+                    </p>
+                  ) : null}
+                  {game.lastPlayedAt ? (
+                    <p className="mt-0.5 text-xs text-clay2">
+                      Last played{" "}
+                      {formatLastPlayedAt(game.lastPlayedAt, displayTimeZone)}
+                    </p>
+                  ) : game.lastHeldDay ? (
+                    <p className="mt-0.5 text-xs text-clay2">
+                      Played {formatHeldDay(game.lastHeldDay)}
+                    </p>
+                  ) : null}
+                </div>
+
+                <p className="shrink-0 tabular-nums text-clay">
+                  {formatPlaytime(
+                    sort === "today"
+                      ? game.todayMinutes
+                      : sort === "this-week"
+                        ? game.weekMinutes
+                        : game.playtimeMinutes
+                  )}
+                </p>
+              </li>
+            );
+          })
         )}
       </ul>
 
@@ -198,3 +220,4 @@ function SortButton({
     </button>
   );
 }
+
