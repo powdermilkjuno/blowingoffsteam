@@ -93,7 +93,7 @@ export function LeaderboardBoard({
         <p className="mt-2 text-center text-xs text-muted">{description}</p>
       ) : null}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)]">
         <TopFiveChart rows={topFive} goal={goal} size={chartSize} embedded={Boolean(tint)} />
 
         <div>

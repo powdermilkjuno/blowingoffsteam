@@ -24,7 +24,7 @@ export default async function DashboardPage({
     loadLeaderboard(profile),
   ]);
   const featured = boards.group;
-  const leaderboard = featured?.boards.today ?? boards.friends.today;
+  const leaderboard = featured?.boards ?? boards.friends;
   const leaderboardTitle = featured
     ? featured.starred
       ? `Starred · ${featured.name}`
@@ -58,7 +58,11 @@ export default async function DashboardPage({
         leaderboardHref={leaderboardHref}
         leaderboardAccent={featured?.accent}
         leaderboardDescription={featured?.description}
-        leaderboardGoalMinutes={profile.capDayMinutes}
+        leaderboardGoalHours={{
+          today: profile.capDayMinutes,
+          week: profile.capWeekMinutes,
+          month: profile.capMonthMinutes,
+        }}
       />
     </AppShell>
   );
