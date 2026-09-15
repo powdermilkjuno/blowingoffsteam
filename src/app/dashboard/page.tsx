@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { getLinkedAccounts } from "@/lib/auth/accounts";
 import { loadDashboard, loadLeaderboard } from "@/lib/dashboard-data";
-import { listGroupsForProfile } from "@/lib/db/groups";
 import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
-import Card from "@/components/Card";
 import { PlaytimeView } from "../_components/playtime-view";
 
 export const dynamic = "force-dynamic";
@@ -20,14 +18,19 @@ export default async function DashboardPage({
 
   const { error } = await searchParams;
   const errorMessage = typeof error === "string" ? ERRORS[error] : undefined;
-  const [data, { hasPassword }, boards, groups] = await Promise.all([
+  const [data, { hasPassword }, boards] = await Promise.all([
     loadDashboard(profile),
     getLinkedAccounts(),
     loadLeaderboard(profile),
-    listGroupsForProfile(profile.id),
   ]);
-
-  const favorites = groups.filter((group) => group.favorited);
+  const featured = boards.group;
+  const leaderboard = featured?.boards.today ?? boards.friends.today;
+  const leaderboardTitle = featured
+    ? featured.starred
+      ? `Starred · ${featured.name}`
+      : featured.name
+    : "Friends";
+  const leaderboardHref = featured ? `/groups/${featured.id}` : "/leaderboard";
 
   return (
     <AppShell active="dashboard" displayName={profile.displayName} wide>
@@ -47,22 +50,13 @@ export default async function DashboardPage({
         </p>
       )}
 
-      {favorites.length > 0 ? (
-        <Card className="corners flex flex-wrap gap-2 p-4">
-          <p className="w-full text-xs text-fern">Favorites</p>
-          {favorites.map((group) => (
-            <Link
-              key={group.id}
-              href={`/groups/${group.id}`}
-              className="rounded-sm border border-line px-3 py-1.5 text-sm text-paper hover:border-fern hover:text-signal"
-            >
-              {group.name}
-            </Link>
-          ))}
-        </Card>
-      ) : null}
-
-      <PlaytimeView data={data} viewerIsOwner leaderboard={boards.friends.today} />
+      <PlaytimeView
+        data={data}
+        viewerIsOwner
+        leaderboard={leaderboard}
+        leaderboardTitle={leaderboardTitle}
+        leaderboardHref={leaderboardHref}
+      />
     </AppShell>
   );
 }
