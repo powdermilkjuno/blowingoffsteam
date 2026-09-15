@@ -521,6 +521,26 @@ export async function sumDailyMinutes(input: {
   return row?.minutes ?? 0;
 }
 
+export async function listAccountDailyMinutes(
+  profileId: string,
+): Promise<{ day: string; minutes: number }[]> {
+  const rows = await getDb()
+    .select({
+      day: playtimeDaily.day,
+      minutes: playtimeDaily.minutes,
+    })
+    .from(playtimeDaily)
+    .where(
+      and(
+        eq(playtimeDaily.profileId, profileId),
+        eq(playtimeDaily.appId, ACCOUNT_APP_ID),
+      ),
+    )
+    .orderBy(asc(playtimeDaily.day));
+
+  return rows;
+}
+
 export async function sumDailyMinutesByApp(input: {
   profileId: string;
   fromDay: string;

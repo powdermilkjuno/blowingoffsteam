@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth/server";
 import {
   getProfileByAuthUserId,
   getProfileBySteamId,
+  isProfileComplete,
 } from "@/lib/db/profiles";
 import { syncLinkedPlaytime } from "@/lib/playtime-sync";
 import { fetchPlayerSummary } from "@/lib/steam-api";
@@ -59,7 +60,9 @@ export async function GET(request: Request) {
       profileUrl: summary.profileUrl,
     });
 
-    return NextResponse.redirect(new URL("/dashboard", appUrl));
+    return NextResponse.redirect(
+      new URL(isProfileComplete(profile) ? "/dashboard" : "/onboarding", appUrl),
+    );
   }
 
   // Steam cannot mint a session, so an existing account still has to enter its

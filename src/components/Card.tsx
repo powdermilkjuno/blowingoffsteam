@@ -6,6 +6,7 @@ const tones = {
   solid: "border border-clay/30 bg-clay/10",
   outline: "border border-line bg-transparent",
   danger: "border border-danger/30 bg-danger/5",
+  plain: "",
 } as const;
 
 const radii = {
