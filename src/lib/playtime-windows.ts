@@ -103,12 +103,14 @@ export function recencyUnix(game: {
   lastPlayedAt?: number | null;
   lastHeldDay?: string | null;
 }): number {
-  if (game.lastPlayedAt) return game.lastPlayedAt;
+  const fromSteam =
+    game.lastPlayedAt != null && game.lastPlayedAt > 0 ? game.lastPlayedAt : 0;
+  let fromHeld = 0;
   if (game.lastHeldDay) {
     const parsed = Date.parse(`${game.lastHeldDay}T12:00:00.000Z`);
-    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
+    fromHeld = Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
   }
-  return 0;
+  return Math.max(fromSteam, fromHeld);
 }
 
 // Steam's 14-day minutes are a lump. A real rtime_last_played inside that

@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { computeArchetypeBreakdown } from "@/lib/archetypes";
 import { auth } from "@/lib/auth/server";
 import { getAuthUserIdByEmail } from "@/lib/db/auth-users";
 import {
@@ -10,8 +11,12 @@ import {
   getProfileBySteamId,
   isUsernameTaken,
   normalizeUsername,
+  updateProfileArchetype,
+  updateProfileCaps,
   validateUsername,
 } from "@/lib/db/profiles";
+import { hoursInputToMinutes } from "@/lib/hours";
+import { isValidTimeZone } from "@/lib/playtime-windows";
 import { syncLinkedPlaytime } from "@/lib/playtime-sync";
 import {
   clearedTicketCookieOptions,
@@ -21,7 +26,15 @@ import {
 
 export type OnboardingState = {
   error?: string;
-  values?: { username: string; displayName: string; email: string };
+  values?: {
+    username: string;
+    displayName: string;
+    email: string;
+    timeZone: string;
+    capDayHours: string;
+    capWeekHours: string;
+    capMonthHours: string;
+  };
 };
 
 function userIdFromAuthData(data: unknown): string | null {
@@ -32,6 +45,43 @@ function userIdFromAuthData(data: unknown): string | null {
   return null;
 }
 
+function parseCaps(formData: FormData): {
+  error?: string;
+  caps?: {
+    capDayMinutes: number;
+    capWeekMinutes: number;
+    capMonthMinutes: number;
+  };
+} {
+  const capDayMinutes = hoursInputToMinutes(
+    String(formData.get("capDayHours") ?? ""),
+  );
+  const capWeekMinutes = hoursInputToMinutes(
+    String(formData.get("capWeekHours") ?? ""),
+  );
+  const capMonthMinutes = hoursInputToMinutes(
+    String(formData.get("capMonthHours") ?? ""),
+  );
+
+  if (
+    capDayMinutes == null ||
+    capWeekMinutes == null ||
+    capMonthMinutes == null
+  ) {
+    return { error: "Enter hoped max hours for day, week, and month." };
+  }
+  if (capDayMinutes > 24 * 60) {
+    return { error: "Day cap cannot exceed 24 hours." };
+  }
+  if (capWeekMinutes > 168 * 60) {
+    return { error: "Week cap cannot exceed 168 hours." };
+  }
+  if (capMonthMinutes > 744 * 60) {
+    return { error: "Month cap cannot exceed 744 hours." };
+  }
+  return { caps: { capDayMinutes, capWeekMinutes, capMonthMinutes } };
+}
+
 export async function completeOnboardingAction(
   _prev: OnboardingState,
   formData: FormData,
@@ -40,8 +90,17 @@ export async function completeOnboardingAction(
   const displayName = String(formData.get("displayName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const timeZone = String(formData.get("timeZone") ?? "UTC");
 
-  const values = { username, displayName, email };
+  const values = {
+    username,
+    displayName,
+    email,
+    timeZone,
+    capDayHours: String(formData.get("capDayHours") ?? ""),
+    capWeekHours: String(formData.get("capWeekHours") ?? ""),
+    capMonthHours: String(formData.get("capMonthHours") ?? ""),
+  };
 
   const usernameError = validateUsername(username);
   if (usernameError) return { error: usernameError, values };
@@ -49,6 +108,12 @@ export async function completeOnboardingAction(
   if (await isUsernameTaken(username)) {
     return { error: "That username is taken.", values };
   }
+  if (!isValidTimeZone(timeZone)) {
+    return { error: "Choose a valid time zone.", values };
+  }
+
+  const parsed = parseCaps(formData);
+  if (parsed.error || !parsed.caps) return { error: parsed.error, values };
 
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters.", values };
@@ -61,17 +126,17 @@ export async function completeOnboardingAction(
 
   const { data: existingSession } = await auth.getSession();
 
-  // Already signed in (stale Google session, etc.) — attach the Steam-first
-  // profile instead of creating a second Neon Auth user.
   if (existingSession?.user) {
     const existingProfile = await getProfileByAuthUserId(existingSession.user.id);
-    if (existingProfile) redirect("/dashboard");
+    if (existingProfile) redirect("/onboarding");
 
     await createProfile({
       authUserId: existingSession.user.id,
       username: normalizeUsername(username),
       displayName,
       avatarUrl: ticket.avatarUrl,
+      timeZone,
+      ...parsed.caps,
     });
 
     await linkSteamAndSync(
@@ -80,7 +145,7 @@ export async function completeOnboardingAction(
       ticket.profileUrl,
     );
     await clearTicket();
-    redirect("/dashboard");
+    redirect("/onboarding");
   }
 
   if (await getProfileBySteamId(ticket.steamId)) {
@@ -90,8 +155,6 @@ export async function completeOnboardingAction(
     };
   }
 
-  // Drop leftover cookies from a wiped test user so they cannot shadow the
-  // session that sign-up is about to set.
   await auth.signOut();
 
   const { data: signUpData, error: signUpError } = await auth.signUp.email({
@@ -100,9 +163,6 @@ export async function completeOnboardingAction(
     name: displayName,
   });
 
-  // signUp.email sets the session on the outgoing response. getSession() in
-  // this same action still reads the incoming request, so it looks logged out
-  // even when the account was created. Use the signup payload, then sign-in.
   let authUserId = userIdFromAuthData(signUpData);
 
   if (!authUserId) {
@@ -134,13 +194,80 @@ export async function completeOnboardingAction(
       username: normalizeUsername(username),
       displayName,
       avatarUrl: ticket.avatarUrl,
+      timeZone,
+      ...parsed.caps,
     });
   }
 
   await linkSteamAndSync(authUserId, ticket.steamId, ticket.profileUrl);
   await clearTicket();
 
+  redirect("/onboarding");
+}
+
+export async function confirmArchetypeAction(
+  _prev: OnboardingState,
+  formData: FormData,
+): Promise<OnboardingState> {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const profile = await getProfileByAuthUserId(session.user.id);
+  if (!profile) redirect("/onboarding");
+
+  if (
+    profile.capDayMinutes == null ||
+    profile.capWeekMinutes == null ||
+    profile.capMonthMinutes == null
+  ) {
+    const parsed = parseCaps(formData);
+    if (parsed.error || !parsed.caps) return { error: parsed.error };
+    await updateProfileCaps(profile.id, parsed.caps);
+  }
+
+  const breakdown = await computeArchetypeBreakdown(profile);
+  await updateProfileArchetype(profile.id, breakdown.winner);
   redirect("/dashboard");
+}
+
+export async function skipArchetypeAction(formData: FormData) {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const profile = await getProfileByAuthUserId(session.user.id);
+  if (!profile) redirect("/onboarding");
+
+  if (
+    profile.capDayMinutes == null ||
+    profile.capWeekMinutes == null ||
+    profile.capMonthMinutes == null
+  ) {
+    const parsed = parseCaps(formData);
+    if (parsed.error || !parsed.caps) redirect("/onboarding");
+    await updateProfileCaps(profile.id, parsed.caps);
+  }
+
+  redirect("/dashboard");
+}
+
+export async function startDiagnosticAction(formData: FormData) {
+  const { data: session } = await auth.getSession();
+  if (!session?.user) redirect("/login");
+
+  const profile = await getProfileByAuthUserId(session.user.id);
+  if (!profile) redirect("/onboarding");
+
+  if (
+    profile.capDayMinutes == null ||
+    profile.capWeekMinutes == null ||
+    profile.capMonthMinutes == null
+  ) {
+    const parsed = parseCaps(formData);
+    if (parsed.error || !parsed.caps) redirect("/onboarding");
+    await updateProfileCaps(profile.id, parsed.caps);
+  }
+
+  redirect("/onboarding?diagnostic=1");
 }
 
 async function linkSteamAndSync(

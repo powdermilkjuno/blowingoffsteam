@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth/server";
 import { loadLeaderboard } from "@/lib/dashboard-data";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
 import Card from "@/components/Card";
 import LeaderboardTabs from "@/components/LeaderboardTabs";
@@ -10,21 +8,30 @@ import PageIntro from "@/components/PageIntro";
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
+  const profile = await requireCompleteProfile();
 
-  const profile = await getProfileByAuthUserId(session.user.id);
-  if (!profile) redirect("/onboarding");
-
-  const boards = await loadLeaderboard(profile);
+  const view = await loadLeaderboard(profile);
 
   return (
-    <AppShell active="leaderboard" displayName={profile.displayName} wide>
-      <PageIntro  title="Leaderboard">
-      </PageIntro>
+    <AppShell
+      active="leaderboard"
+      displayName={profile.displayName}
+      walletPoints={profile.walletPoints}
+      sitePack={profile.equippedSiteTheme}
+      wide
+    >
+      <PageIntro kicker="Lowest hours" title="Leaderboard" />
 
-      <Card className="corners overflow-hidden p-5" radius="sm">
-        <LeaderboardTabs boards={boards} />
+      <Card className="corners p-5" radius="sm">
+        <LeaderboardTabs
+          group={view.group}
+          friends={view.friends}
+          goalHours={{
+            today: profile.capDayMinutes,
+            week: profile.capWeekMinutes,
+            month: profile.capMonthMinutes,
+          }}
+        />
       </Card>
     </AppShell>
   );

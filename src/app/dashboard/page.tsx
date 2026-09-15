@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getLinkedAccounts } from "@/lib/auth/accounts";
-import { auth } from "@/lib/auth/server";
 import { loadDashboard, loadLeaderboard } from "@/lib/dashboard-data";
-import { getProfileByAuthUserId } from "@/lib/db/profiles";
+import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
 import { PlaytimeView } from "../_components/playtime-view";
 
@@ -16,11 +14,7 @@ const ERRORS: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: PageProps<"/dashboard">) {
-  const { data: session } = await auth.getSession();
-  if (!session?.user) redirect("/login");
-
-  const profile = await getProfileByAuthUserId(session.user.id);
-  if (!profile) redirect("/onboarding");
+  const profile = await requireCompleteProfile();
 
   const { error } = await searchParams;
   const errorMessage = typeof error === "string" ? ERRORS[error] : undefined;
@@ -29,9 +23,17 @@ export default async function DashboardPage({
     getLinkedAccounts(),
     loadLeaderboard(profile),
   ]);
+  const featured = boards.group;
+  const leaderboard = featured?.boards ?? boards.friends;
+  const leaderboardTitle = featured
+    ? featured.starred
+      ? `Starred · ${featured.name}`
+      : featured.name
+    : "Friends";
+  const leaderboardHref = featured ? `/groups/${featured.id}` : "/leaderboard";
 
   return (
-    <AppShell active="dashboard" displayName={profile.displayName} wide>
+    <AppShell active="dashboard" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme} wide>
       {errorMessage && (
         <p className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {errorMessage}
@@ -48,7 +50,20 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <PlaytimeView data={data} viewerIsOwner leaderboard={boards.week} />
+      <PlaytimeView
+        data={data}
+        viewerIsOwner
+        leaderboard={leaderboard}
+        leaderboardTitle={leaderboardTitle}
+        leaderboardHref={leaderboardHref}
+        leaderboardAccent={featured?.accent}
+        leaderboardDescription={featured?.description}
+        leaderboardGoalHours={{
+          today: profile.capDayMinutes,
+          week: profile.capWeekMinutes,
+          month: profile.capMonthMinutes,
+        }}
+      />
     </AppShell>
   );
 }

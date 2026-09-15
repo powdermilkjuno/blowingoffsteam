@@ -1,4 +1,8 @@
-import Image from "next/image";
+import type { Archetype } from "@/lib/db/profiles";
+import type { Streaks } from "@/lib/streaks";
+import { BadgeRow } from "@/components/StreakBadge";
+import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -13,16 +17,6 @@ function ordinal(n: number): string {
     default:
       return `${n}TH`;
   }
-}
-
-function initials(name: string): string {
-  return name
-    .split(/[_\s.]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase();
 }
 
 function Trend({ delta }: { delta: number }) {
@@ -46,6 +40,15 @@ export default function HighScoreRow({
   delta = 0,
   isUser = false,
   detailed = false,
+  bio,
+  showBadges = false,
+  archetype,
+  streaks,
+  caps,
+  frame,
+  font,
+  nameColor,
+  flushPlate = false,
 }: {
   rank: number;
   name: string;
@@ -54,13 +57,28 @@ export default function HighScoreRow({
   delta?: number;
   isUser?: boolean;
   detailed?: boolean;
+  bio?: string | null;
+  showBadges?: boolean;
+  archetype?: Archetype | null;
+  streaks?: Streaks;
+  caps?: {
+    capDayMinutes: number | null;
+    capWeekMinutes: number | null;
+    capMonthMinutes: number | null;
+  };
+  frame?: string | null;
+  font?: string | null;
+  nameColor?: string | null;
+  flushPlate?: boolean;
 }) {
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-2 font-pixel text-[11px] tracking-wide ${
+      className={`flex items-center gap-3 overflow-visible px-4 py-2.5 font-pixel text-[11px] tracking-wide ${
         isUser
           ? "bg-signal/15 text-signal"
-          : "text-paper hover:bg-surface/80"
+          : flushPlate
+            ? "text-paper hover:bg-black/10"
+            : "text-paper hover:bg-surface/80"
       }`}
     >
       <span
@@ -71,26 +89,42 @@ export default function HighScoreRow({
         {ordinal(rank)}
       </span>
 
-      {avatarUrl ? (
-        <Image
-          src={avatarUrl}
-          alt=""
-          width={28}
-          height={28}
-          className="h-7 w-7 shrink-0 rounded object-cover"
+      <span
+        className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm border px-2 py-1.5 ${
+          isUser
+            ? "border-signal/40 bg-signal/10"
+            : flushPlate
+              ? "border-line/40 bg-black/10"
+              : "border-line bg-raised/80"
+        }`}
+      >
+        <AvatarWithBio
+          name={name}
+          bio={bio}
+          avatarUrl={avatarUrl}
+          size={28}
+          className={isUser ? "bg-signal/25 text-signal" : ""}
+          frame={frame}
+          font={font}
+          nameColor={nameColor}
         />
-      ) : (
-        <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded font-mono text-[10px] tracking-normal ${
-            isUser ? "bg-signal/25 text-signal" : "bg-moss/70 text-paper"
-          }`}
-        >
-          {initials(name)}
-        </span>
-      )}
-
-      <span className="flex-1 truncate normal-case">{name}</span>
-
+        <NameWithBio
+          name={name}
+          bio={bio}
+          className="min-w-0 flex-1 truncate normal-case"
+          font={font}
+          nameColor={nameColor}
+        />
+        {showBadges ? (
+          <BadgeRow
+            archetype={archetype}
+            streaks={streaks}
+            caps={caps}
+            nowrap
+            className="mt-0 shrink-0"
+          />
+        ) : null}
+      </span>
       {detailed ? (
         <span className="hidden w-16 shrink-0 text-right text-[9px] sm:block">
           <Trend delta={delta} />

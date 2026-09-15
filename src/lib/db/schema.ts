@@ -22,6 +22,17 @@ export const profiles = pgTable("profiles", {
   avatarUrl: text("avatar_url").notNull().default(""),
   friendCode: text("friend_code").notNull().unique(),
   timeZone: text("time_zone").notNull().default("UTC"),
+  archetype: text("archetype"),
+  capDayMinutes: integer("cap_day_minutes"),
+  capWeekMinutes: integer("cap_week_minutes"),
+  capMonthMinutes: integer("cap_month_minutes"),
+  bio: text("bio").notNull().default(""),
+  walletPoints: integer("wallet_points").notNull().default(0),
+  equippedFrame: text("equipped_frame").notNull().default("frame:none"),
+  equippedFont: text("equipped_font").notNull().default("font:mono"),
+  equippedSiteTheme: text("equipped_site_theme").notNull().default("theme:default"),
+  equippedNameColor: text("equipped_name_color").notNull().default("name:default"),
+  equippedBackdrop: text("equipped_backdrop").notNull().default("backdrop:none"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -126,5 +137,82 @@ export const friendships = pgTable(
       "friendships_status",
       sql`${table.status} in ('pending', 'accepted')`,
     ),
+  ],
+);
+
+export const groups = pgTable("groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  inviteToken: text("invite_token").notNull().unique(),
+  ownerProfileId: uuid("owner_profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  description: text("description").notNull().default(""),
+  accent: text("accent").notNull().default("clay"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const profileInventory = pgTable(
+  "profile_inventory",
+  {
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    itemId: text("item_id").notNull(),
+    acquiredAt: timestamp("acquired_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.profileId, table.itemId] })],
+);
+
+export const groupMembers = pgTable(
+  "group_members",
+  {
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"),
+    status: text("status").notNull().default("pending"),
+    favorited: boolean("favorited").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.profileId] }),
+    index("group_members_profile_idx").on(table.profileId),
+    check("group_members_role", sql`${table.role} in ('owner', 'co_owner', 'member')`),
+    check(
+      "group_members_status",
+      sql`${table.status} in ('pending', 'accepted')`,
+    ),
+  ],
+);
+
+export const groupDailyScores = pgTable(
+  "group_daily_scores",
+  {
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    place: integer("place").notNull(),
+    minutes: integer("minutes").notNull().default(0),
+    points: integer("points").notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.groupId, table.profileId, table.day] }),
+    index("group_daily_scores_group_day_idx").on(table.groupId, table.day),
   ],
 );

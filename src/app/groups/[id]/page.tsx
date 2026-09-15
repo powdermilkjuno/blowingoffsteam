@@ -1,0 +1,434 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { resolveAppUrl } from "@/lib/app-url";
+import { getFriendshipStatuses } from "@/lib/db/friends";
+import {
+  canManageGroup,
+  getGroupById,
+  getLatestScoreDay,
+  getMembership,
+  listAcceptedMembers,
+  listMemberPoints,
+  listPendingMembers,
+  listScoresForDay,
+} from "@/lib/db/groups";
+import { GROUP_ACCENTS } from "@/lib/group-accent";
+import { listInventoryIds } from "@/lib/db/shop";
+import { ownedGroupAccents } from "@/lib/shop-catalog";
+import {
+  formatHeldDay,
+  formatPlaytime,
+} from "@/lib/db/profiles";
+import { addUtcDays, dayStringInZone } from "@/lib/playtime-windows";
+import { requireCompleteProfile } from "@/lib/require-profile";
+import { loadGroupBoards } from "@/lib/dashboard-data";
+import AppShell from "@/components/AppShell";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
+import PageIntro from "@/components/PageIntro";
+import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
+import FavoriteStarButton from "@/components/FavoriteStarButton";
+import { GroupLeaderboard } from "@/components/LeaderboardTabs";
+import { AddGroupFriendButton } from "../add-group-friend-button";
+import {
+  acceptJoinAction,
+  declineJoinAction,
+  deleteGroupAction,
+  kickMemberAction,
+  leaveGroupAction,
+  rotateInviteAction,
+  setMemberRoleAction,
+  toggleFavoriteAction,
+} from "../actions";
+import { CopyInviteLink } from "../copy-invite";
+import { GroupPresentationForm } from "../group-presentation-form";
+
+export const dynamic = "force-dynamic";
+
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}TH`;
+  switch (n % 10) {
+    case 1:
+      return `${n}ST`;
+    case 2:
+      return `${n}ND`;
+    case 3:
+      return `${n}RD`;
+    default:
+      return `${n}TH`;
+  }
+}
+
+export default async function GroupPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const viewer = await requireCompleteProfile();
+
+  const { id } = await params;
+  const group = await getGroupById(id);
+  if (!group) notFound();
+
+  const membership = await getMembership(group.id, viewer.id);
+  if (!membership || membership.status !== "accepted") {
+    return (
+      <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme} wide>
+        <Card tone="plain" className={`corners space-y-3 p-6 ${GROUP_ACCENTS[group.accent].card}`}>
+          <h1 className="text-sm text-paper">You are not in {group.name}</h1>
+          <p className="text-sm text-muted">
+            Ask the owner for the join link, or wait if you already requested.
+          </p>
+          <Button href="/groups" variant="primary">
+            Back to groups
+          </Button>
+        </Card>
+      </AppShell>
+    );
+  }
+
+  const isOwner = membership.role === "owner";
+  const canEdit = canManageGroup(membership.role);
+  const accent = GROUP_ACCENTS[group.accent];
+  const today = dayStringInZone(new Date(), group.timeZone);
+  const yesterday = addUtcDays(today, -1);
+
+  const [members, pending, points, latestDay, origin, inventory] = await Promise.all([
+    listAcceptedMembers(group.id),
+    isOwner ? listPendingMembers(group.id) : Promise.resolve([]),
+    listMemberPoints(group.id),
+    getLatestScoreDay(group.id),
+    resolveAppUrl(),
+    listInventoryIds(viewer.id),
+  ]);
+  const pickerAccents = ownedGroupAccents(inventory);
+  if (!pickerAccents.includes(group.accent)) {
+    pickerAccents.unshift(group.accent);
+  }
+
+  const [boards, lastScores, friendships] = await Promise.all([
+    loadGroupBoards(
+      viewer,
+      members.map((member) => member.profile),
+    ),
+    latestDay ? listScoresForDay(group.id, latestDay) : Promise.resolve([]),
+    getFriendshipStatuses(
+      viewer.id,
+      members.map((member) => member.profile.id),
+    ),
+  ]);
+
+  const profileById = new Map(
+    members.map((member) => [member.profile.id, member.profile]),
+  );
+  const lastBoard = lastScores
+    .map((row) => {
+      const profile = profileById.get(row.profileId);
+      if (!profile) return null;
+      return { ...row, profile };
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+    .sort((a, b) => a.place - b.place || a.minutes - b.minutes);
+
+  const inviteUrl = `${origin}/groups/join/${group.inviteToken}`;
+
+  return (
+    <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme} wide>
+      <Link href="/groups" className="text-xs text-fern hover:text-signal">
+        ← Back to groups
+      </Link>
+
+      <PageIntro
+        kicker="Lowest activity"
+        title={<span className={accent.title}>{group.name}</span>}
+      >
+        {group.description ? (
+          <p className="text-paper">{group.description}</p>
+        ) : null}
+        Today is {formatHeldDay(today)} in {group.timeZone}. Lowest held
+        minutes wins. Scores are calculated on {formatHeldDay(yesterday)} after the daily
+        Steam pull at {group.timeZone}.
+      </PageIntro>
+      <form action={toggleFavoriteAction} className="-mt-3">
+        <input type="hidden" name="groupId" value={group.id} />
+        <FavoriteStarButton favorited={membership.favorited} labeled />
+      </form>
+
+      <Card tone="plain" className={`corners p-5 ${accent.card}`} radius="sm">
+        <GroupLeaderboard
+          boards={boards}
+          title={group.name}
+          description={group.description || undefined}
+          accent={group.accent}
+          goalHours={{
+            today: viewer.capDayMinutes,
+            week: viewer.capWeekMinutes,
+            month: viewer.capMonthMinutes,
+          }}
+        />
+      </Card>
+
+      {canEdit ? (
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
+          <h2 className="text-sm text-paper">Group</h2>
+          <GroupPresentationForm
+            groupId={group.id}
+            description={group.description}
+            accent={group.accent}
+            ownedAccents={pickerAccents}
+          />
+        </Card>
+      ) : null}
+
+      {isOwner ? (
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
+          <h2 className="text-sm text-paper">Join link</h2>
+          <CopyInviteLink url={inviteUrl} />
+          <form action={rotateInviteAction}>
+            <input type="hidden" name="groupId" value={group.id} />
+            <button type="submit" className="text-xs text-fern hover:text-signal">
+              Generate a new link
+            </button>
+          </form>
+        </Card>
+      ) : null}
+
+      {isOwner && pending.length > 0 ? (
+        <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
+          <h2 className="text-sm text-paper">
+            Join requests ({pending.length})
+          </h2>
+          <ul className="divide-y divide-line">
+            {pending.map((row) => (
+              <li
+                key={row.profile.id}
+                className="flex items-center gap-3 py-3 text-sm"
+              >
+                <AvatarWithBio
+                  name={row.profile.displayName}
+                  bio={row.profile.bio}
+                  avatarUrl={row.profile.avatarUrl}
+                  frame={row.profile.equippedFrame}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
+                />
+                <div className="min-w-0 flex-1">
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate text-paper"
+                    font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
+                  />
+                  <p className="text-xs text-muted">@{row.profile.username}</p>
+                </div>
+                <form action={acceptJoinAction}>
+                  <input type="hidden" name="groupId" value={group.id} />
+                  <input type="hidden" name="profileId" value={row.profile.id} />
+                  <Button type="submit" variant="primary" className="px-3 py-1 text-xs">
+                    Accept
+                  </Button>
+                </form>
+                <form action={declineJoinAction}>
+                  <input type="hidden" name="groupId" value={group.id} />
+                  <input type="hidden" name="profileId" value={row.profile.id} />
+                  <button
+                    type="submit"
+                    className="text-xs text-muted hover:text-danger"
+                  >
+                    Decline
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      <Card tone="plain" className={`corners p-5 ${accent.card}`} radius="sm">
+        <h2 className="text-sm text-paper">
+          {latestDay
+            ? `Last scored · ${formatHeldDay(latestDay)}`
+            : "Last scored day"}
+        </h2>
+        {lastBoard.length === 0 ? null : (
+          <div className="mt-4 divide-y divide-line">
+            {lastBoard.map((row) => (
+              <div
+                key={row.profileId}
+                className={`flex items-center gap-3 py-2.5 text-sm ${
+                  row.profileId === viewer.id ? "text-signal" : "text-paper"
+                }`}
+              >
+                <span className="w-10 shrink-0 text-xs text-clay">
+                  {ordinal(row.place)}
+                </span>
+                <AvatarWithBio
+                  name={row.profile.displayName}
+                  bio={row.profile.bio}
+                  avatarUrl={row.profile.avatarUrl}
+                  frame={row.profile.equippedFrame}
+                  font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
+                />
+                <div className="min-w-0 flex-1">
+                  <NameWithBio
+                    name={row.profile.displayName}
+                    bio={row.profile.bio}
+                    className="truncate"
+                    font={row.profile.equippedFont} nameColor={row.profile.equippedNameColor}
+                  />
+                </div>
+                <span className="text-xs text-muted">
+                  {formatPlaytime(row.minutes)}
+                </span>
+                <span className="w-14 shrink-0 text-right tabular-nums text-signal">
+                  {row.points} pts
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
+        <h2 className="text-sm text-paper">Members ({members.length})</h2>
+        <ul className="divide-y divide-line">
+          {members.map((member) => {
+            const status = friendships.get(member.profile.id) ?? "none";
+            const isSelf = member.profile.id === viewer.id;
+            return (
+              <li
+                key={member.profile.id}
+                className="flex items-center gap-3 py-3 text-sm"
+              >
+                <AvatarWithBio
+                  name={member.profile.displayName}
+                  bio={member.profile.bio}
+                  avatarUrl={member.profile.avatarUrl}
+                  frame={member.profile.equippedFrame}
+                  font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
+                />
+                <div className="min-w-0 flex-1">
+                  {isSelf || status === "accepted" ? (
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
+                      href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
+                      className="truncate text-paper hover:text-signal"
+                      font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
+                    />
+                  ) : (
+                    <NameWithBio
+                      name={member.profile.displayName}
+                      bio={member.profile.bio}
+                      className="truncate text-paper"
+                      font={member.profile.equippedFont} nameColor={member.profile.equippedNameColor}
+                    />
+                  )}
+                  <p className="text-xs text-muted">
+                    @{member.profile.username}
+                    {member.role === "owner"
+                      ? " · owner"
+                      : member.role === "co_owner"
+                        ? " · co-owner"
+                        : ""}
+                  </p>
+                </div>
+                <span className="text-xs text-signal">
+                  {points.get(member.profile.id) ?? 0} pts
+                </span>
+                {isSelf ? (
+                  <span className="text-xs text-muted">You</span>
+                ) : status === "accepted" ? (
+                  <Link
+                    href={`/u/${member.profile.username}`}
+                    className="text-xs text-fern hover:text-signal"
+                  >
+                    Profile
+                  </Link>
+                ) : status === "outgoing" ? (
+                  <span className="text-xs text-muted">Request sent</span>
+                ) : status === "incoming" ? (
+                  <Link
+                    href="/friends"
+                    className="text-xs text-fern hover:text-signal"
+                  >
+                    Accept on Friends
+                  </Link>
+                ) : (
+                  <AddGroupFriendButton
+                    otherProfileId={member.profile.id}
+                    groupId={group.id}
+                  />
+                )}
+                {isOwner && !isSelf && member.role !== "owner" ? (
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <form action={setMemberRoleAction}>
+                      <input type="hidden" name="groupId" value={group.id} />
+                      <input
+                        type="hidden"
+                        name="profileId"
+                        value={member.profile.id}
+                      />
+                      {member.role === "co_owner" ? (
+                        <>
+                          <input type="hidden" name="role" value="member" />
+                          <button
+                            type="submit"
+                            className="text-xs text-fern hover:text-signal"
+                          >
+                            Remove co-owner
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <input type="hidden" name="role" value="co_owner" />
+                          <button
+                            type="submit"
+                            className="text-xs text-fern hover:text-signal"
+                          >
+                            Make co-owner
+                          </button>
+                        </>
+                      )}
+                    </form>
+                    <form action={kickMemberAction}>
+                      <input type="hidden" name="groupId" value={group.id} />
+                      <input
+                        type="hidden"
+                        name="profileId"
+                        value={member.profile.id}
+                      />
+                      <button
+                        type="submit"
+                        className="text-xs text-muted hover:text-danger"
+                      >
+                        Kick
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      {isOwner ? (
+        <form action={deleteGroupAction}>
+          <input type="hidden" name="groupId" value={group.id} />
+          <button type="submit" className="text-xs text-danger hover:underline">
+            Delete group
+          </button>
+        </form>
+      ) : (
+        <form action={leaveGroupAction}>
+          <input type="hidden" name="groupId" value={group.id} />
+          <button type="submit" className="text-xs text-muted hover:text-danger">
+            Leave group
+          </button>
+        </form>
+      )}
+    </AppShell>
+  );
+}

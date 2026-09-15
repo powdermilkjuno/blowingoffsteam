@@ -1,6 +1,6 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { getDb } from "./index";
-import type { Profile } from "./profiles";
+import { toProfile, type Profile } from "./profiles";
 import { friendships, profiles } from "./schema";
 
 export type FriendRequest = {
@@ -11,6 +11,8 @@ export type FriendRequest = {
 export type AddFriendResult =
   | { ok: true; profile: Profile }
   | { ok: false; error: string };
+
+export type FriendshipStatus = "none" | "accepted" | "outgoing" | "incoming";
 
 function pair(a: string, b: string) {
   return or(
@@ -33,18 +35,39 @@ export async function sendFriendRequest(
     .limit(1);
 
   if (!target) return { ok: false, error: "No user has that friend code." };
-  if (target.id === profileId) {
-    return { ok: false, error: "That is your own friend code." };
+  return sendFriendRequestToProfile(profileId, toProfile(target));
+}
+
+export async function sendFriendRequestToProfile(
+  profileId: string,
+  target: Profile | string,
+): Promise<AddFriendResult> {
+  const db = getDb();
+  let person: Profile | null;
+  if (typeof target === "string") {
+    const [row] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, target))
+      .limit(1);
+    person = row ? toProfile(row) : null;
+  } else {
+    person = target;
+  }
+
+  if (!person) return { ok: false, error: "That person is not on Blowing Off Steam." };
+  if (person.id === profileId) {
+    return { ok: false, error: "That is you." };
   }
 
   const [existing] = await db
     .select()
     .from(friendships)
-    .where(pair(profileId, target.id))
+    .where(pair(profileId, person.id))
     .limit(1);
 
   if (existing?.status === "accepted") {
-    return { ok: false, error: `You are already friends with ${target.displayName}.` };
+    return { ok: false, error: `You are already friends with ${person.displayName}.` };
   }
   if (existing?.status === "pending") {
     return existing.requesterId === profileId
@@ -54,10 +77,10 @@ export async function sendFriendRequest(
 
   await db.insert(friendships).values({
     requesterId: profileId,
-    addresseeId: target.id,
+    addresseeId: person.id,
   });
 
-  return { ok: true, profile: target };
+  return { ok: true, profile: person };
 }
 
 export async function acceptFriendRequest(
@@ -109,7 +132,7 @@ export async function listFriends(profileId: string): Promise<Profile[]> {
     );
 
   return [...asRequester, ...asAddressee]
-    .map((row) => row.profile)
+    .map((row) => toProfile(row.profile))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
 
@@ -127,7 +150,10 @@ export async function listIncomingRequests(
       ),
     );
 
-  return rows;
+  return rows.map((row) => ({
+    profile: toProfile(row.profile),
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function listOutgoingRequests(
@@ -144,7 +170,10 @@ export async function listOutgoingRequests(
       ),
     );
 
-  return rows;
+  return rows.map((row) => ({
+    profile: toProfile(row.profile),
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function areFriends(
@@ -158,4 +187,45 @@ export async function areFriends(
     .limit(1);
 
   return row !== undefined;
+}
+
+export async function getFriendshipStatuses(
+  profileId: string,
+  otherIds: string[],
+): Promise<Map<string, FriendshipStatus>> {
+  const statuses = new Map<string, FriendshipStatus>(
+    otherIds.map((id) => [id, "none"]),
+  );
+  const ids = otherIds.filter((id) => id !== profileId);
+  if (ids.length === 0) return statuses;
+
+  const rows = await getDb()
+    .select()
+    .from(friendships)
+    .where(
+      or(
+        and(
+          eq(friendships.requesterId, profileId),
+          inArray(friendships.addresseeId, ids),
+        ),
+        and(
+          eq(friendships.addresseeId, profileId),
+          inArray(friendships.requesterId, ids),
+        ),
+      ),
+    );
+
+  for (const row of rows) {
+    const otherId =
+      row.requesterId === profileId ? row.addresseeId : row.requesterId;
+    if (row.status === "accepted") {
+      statuses.set(otherId, "accepted");
+    } else if (row.requesterId === profileId) {
+      statuses.set(otherId, "outgoing");
+    } else {
+      statuses.set(otherId, "incoming");
+    }
+  }
+
+  return statuses;
 }

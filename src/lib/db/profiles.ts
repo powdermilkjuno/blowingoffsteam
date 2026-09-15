@@ -21,6 +21,7 @@ const RESERVED_USERNAMES = new Set([
   "auth",
   "dashboard",
   "friends",
+  "groups",
   "onboarding",
   "settings",
   "support",
@@ -28,6 +29,15 @@ const RESERVED_USERNAMES = new Set([
 ]);
 
 const STALE_AFTER_MS = 15 * 60 * 1000;
+
+export type Archetype =
+  | "night_owl"
+  | "early_bird"
+  | "firecracker"
+  | "hearth"
+  | "one_hit_wonder"
+  | "chart_topper"
+  | "grass_toucher";
 
 export type Profile = {
   id: string;
@@ -37,6 +47,18 @@ export type Profile = {
   avatarUrl: string;
   friendCode: string;
   timeZone: string;
+  archetype: Archetype | null;
+  capDayMinutes: number | null;
+  capWeekMinutes: number | null;
+  capMonthMinutes: number | null;
+  bio: string;
+  walletPoints: number;
+  equippedFrame: string;
+  equippedFont: string;
+  equippedSiteTheme: string;
+  equippedNameColor: string;
+  equippedBackdrop: string;
+  createdAt: Date;
 };
 
 export type SteamLink = {
@@ -106,6 +128,20 @@ export function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
+export const BIO_MAX_LENGTH = 80;
+
+export function validateBio(raw: string): string | null {
+  const bio = raw.replace(/\s+/g, " ").trim();
+  if (bio.length > BIO_MAX_LENGTH) {
+    return `Bio must be ${BIO_MAX_LENGTH} characters or fewer.`;
+  }
+  return null;
+}
+
+export function normalizeBio(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim();
+}
+
 export function validateUsername(raw: string): string | null {
   const username = normalizeUsername(raw);
   if (username.length < 3 || username.length > 20) {
@@ -126,6 +162,38 @@ export function suggestUsername(displayName: string, steamId: string): string {
   return `player_${steamId.slice(-6)}`;
 }
 
+export function isProfileComplete(profile: Profile): boolean {
+  return (
+    profile.capDayMinutes != null &&
+    profile.capWeekMinutes != null &&
+    profile.capMonthMinutes != null
+  );
+}
+
+export function toProfile(row: typeof profiles.$inferSelect): Profile {
+  return {
+    id: row.id,
+    authUserId: row.authUserId,
+    username: row.username,
+    displayName: row.displayName,
+    avatarUrl: row.avatarUrl,
+    friendCode: row.friendCode,
+    timeZone: row.timeZone,
+    archetype: (row.archetype as Archetype | null) ?? null,
+    capDayMinutes: row.capDayMinutes,
+    capWeekMinutes: row.capWeekMinutes,
+    capMonthMinutes: row.capMonthMinutes,
+    bio: row.bio ?? "",
+    walletPoints: row.walletPoints ?? 0,
+    equippedFrame: row.equippedFrame || "frame:none",
+    equippedFont: row.equippedFont || "font:mono",
+    equippedSiteTheme: row.equippedSiteTheme || "theme:default",
+    equippedNameColor: row.equippedNameColor || "name:default",
+    equippedBackdrop: row.equippedBackdrop || "backdrop:none",
+    createdAt: row.createdAt,
+  };
+}
+
 export async function getProfileByAuthUserId(
   authUserId: string,
 ): Promise<Profile | null> {
@@ -135,7 +203,17 @@ export async function getProfileByAuthUserId(
     .where(eq(profiles.authUserId, authUserId))
     .limit(1);
 
-  return row ?? null;
+  return row ? toProfile(row) : null;
+}
+
+export async function getProfileById(profileId: string): Promise<Profile | null> {
+  const [row] = await getDb()
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
+
+  return row ? toProfile(row) : null;
 }
 
 export async function getProfileByUsername(
@@ -147,7 +225,7 @@ export async function getProfileByUsername(
     .where(eq(profiles.username, normalizeUsername(username)))
     .limit(1);
 
-  return row ?? null;
+  return row ? toProfile(row) : null;
 }
 
 export async function isUsernameTaken(
@@ -161,7 +239,15 @@ export async function isUsernameTaken(
 
 export async function updateProfile(
   profileId: string,
-  input: { username: string; displayName: string; timeZone: string },
+  input: {
+    username: string;
+    displayName: string;
+    timeZone: string;
+    capDayMinutes?: number;
+    capWeekMinutes?: number;
+    capMonthMinutes?: number;
+    bio?: string;
+  },
 ): Promise<Profile> {
   const [row] = await getDb()
     .update(profiles)
@@ -169,11 +255,47 @@ export async function updateProfile(
       username: normalizeUsername(input.username),
       displayName: input.displayName,
       timeZone: input.timeZone,
+      ...(input.bio != null ? { bio: input.bio } : {}),
+      ...(input.capDayMinutes != null ? { capDayMinutes: input.capDayMinutes } : {}),
+      ...(input.capWeekMinutes != null
+        ? { capWeekMinutes: input.capWeekMinutes }
+        : {}),
+      ...(input.capMonthMinutes != null
+        ? { capMonthMinutes: input.capMonthMinutes }
+        : {}),
     })
     .where(eq(profiles.id, profileId))
     .returning();
 
-  return row;
+  return toProfile(row);
+}
+
+export async function updateProfileCaps(
+  profileId: string,
+  input: {
+    capDayMinutes: number;
+    capWeekMinutes: number;
+    capMonthMinutes: number;
+  },
+): Promise<void> {
+  await getDb()
+    .update(profiles)
+    .set({
+      capDayMinutes: input.capDayMinutes,
+      capWeekMinutes: input.capWeekMinutes,
+      capMonthMinutes: input.capMonthMinutes,
+    })
+    .where(eq(profiles.id, profileId));
+}
+
+export async function updateProfileArchetype(
+  profileId: string,
+  archetype: Archetype,
+): Promise<void> {
+  await getDb()
+    .update(profiles)
+    .set({ archetype })
+    .where(eq(profiles.id, profileId));
 }
 
 export async function createProfile(input: {
@@ -181,6 +303,10 @@ export async function createProfile(input: {
   username: string;
   displayName: string;
   avatarUrl: string;
+  timeZone?: string;
+  capDayMinutes?: number | null;
+  capWeekMinutes?: number | null;
+  capMonthMinutes?: number | null;
 }): Promise<Profile> {
   const db = getDb();
 
@@ -195,10 +321,14 @@ export async function createProfile(input: {
           displayName: input.displayName,
           avatarUrl: input.avatarUrl,
           friendCode: generateFriendCode(),
+          timeZone: input.timeZone ?? "UTC",
+          capDayMinutes: input.capDayMinutes ?? null,
+          capWeekMinutes: input.capWeekMinutes ?? null,
+          capMonthMinutes: input.capMonthMinutes ?? null,
         })
         .returning();
 
-      return row;
+      return toProfile(row);
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (!message.includes("friend_code")) throw error;
@@ -252,7 +382,7 @@ export async function getProfileBySteamId(
     .where(eq(steamLinks.steamId, steamId))
     .limit(1);
 
-  return row?.profile ?? null;
+  return row?.profile ? toProfile(row.profile) : null;
 }
 
 export async function getProfileGames(
@@ -356,7 +486,10 @@ export async function saveSteamPlaytime(input: {
   }
 
   const [owner] = await db
-    .select({ timeZone: profiles.timeZone })
+    .select({
+      timeZone: profiles.timeZone,
+      archetype: profiles.archetype,
+    })
     .from(profiles)
     .where(eq(profiles.id, input.profileId))
     .limit(1);

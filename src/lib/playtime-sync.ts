@@ -1,4 +1,5 @@
-import { saveSteamPlaytime } from "./db/profiles";
+import { refreshProfileArchetype } from "./archetypes";
+import { getProfileById, saveSteamPlaytime } from "./db/profiles";
 import { listLinkedSteamAccounts } from "./db/snapshots";
 import { fetchPlaytime, type Playtime } from "./steam-api";
 
@@ -21,6 +22,10 @@ export async function syncLinkedPlaytime(account: {
     profileUrl: account.profileUrl,
     playtime,
   });
+  const profile = await getProfileById(account.profileId);
+  if (profile?.archetype) {
+    await refreshProfileArchetype(profile);
+  }
   return playtime;
 }
 

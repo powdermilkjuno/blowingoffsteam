@@ -1,50 +1,63 @@
-import Image from "next/image";
-import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
+import type { DashboardData, LeaderboardBoards } from "@/lib/dashboard-data";
+import type { GroupAccent } from "@/lib/group-accent";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
 import StatPill from "@/components/StatPill";
 import MiniLeaderboard from "@/components/MiniLeaderboard";
-import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
+import AvatarWithBio from "@/components/AvatarWithBio";
+import NameWithBio from "@/components/NameWithBio";
+import { BadgeLegend, BadgeRow } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
 
 export function PlaytimeView({
   data,
   viewerIsOwner,
   leaderboard,
+  leaderboardTitle = "Leaderboard",
+  leaderboardHref = "/leaderboard",
+  leaderboardAccent,
+  leaderboardDescription,
+  leaderboardGoalHours,
 }: {
   data: DashboardData;
   viewerIsOwner: boolean;
-  leaderboard?: LeaderboardEntry[];
+  leaderboard?: LeaderboardBoards;
+  leaderboardTitle?: string;
+  leaderboardHref?: string;
+  leaderboardAccent?: GroupAccent;
+  leaderboardDescription?: string;
+  leaderboardGoalHours?: {
+    today: number | null;
+    week: number | null;
+    month: number | null;
+  };
 }) {
   const { profile, steam, games, periods, displayTimeZone } = data;
   const who = viewerIsOwner ? "You have" : `${profile.displayName} has`;
 
-  const userRank = leaderboard?.findIndex((entry) => entry.isUser) ?? -1;
-  const userEntry = userRank >= 0 ? leaderboard![userRank] : null;
-
   const profileCard = (
     <Card className="corners flex h-full flex-col p-6" radius="lg">
       <div className="flex items-start gap-4">
-        {profile.avatarUrl ? (
-          <Image
-            src={profile.avatarUrl}
-            alt=""
-            width={56}
-            height={56}
-            className="rounded"
-          />
-        ) : (
-          <div className="grid size-14 place-items-center rounded bg-moss/70 text-lg text-paper">
-            {profile.displayName.slice(0, 1).toUpperCase()}
-          </div>
-        )}
+        <AvatarWithBio
+          name={profile.displayName}
+          bio={profile.bio}
+          avatarUrl={profile.avatarUrl}
+          size={56}
+          frame={profile.equippedFrame}
+          font={profile.equippedFont} nameColor={profile.equippedNameColor}
+        />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-paper">{profile.displayName}</p>
+          <NameWithBio
+            name={profile.displayName}
+            bio={profile.bio}
+            className="truncate text-sm text-paper"
+            font={profile.equippedFont} nameColor={profile.equippedNameColor}
+          />
           {steam?.profileUrl ? (
             <a
               href={steam.profileUrl}
@@ -67,62 +80,76 @@ export function PlaytimeView({
         )}
       </div>
 
-      {userEntry ? (
-        <div className="mt-auto border-t border-line pt-5">
-          <div className="-mx-4">
-            <div className="flex items-center gap-3 px-4 pb-2 font-pixel text-[9px] tracking-wide text-fern">
-              <span className="w-14 shrink-0">Rank</span>
-              <span className="w-7 shrink-0" />
-              <span className="flex-1">Name</span>
-              <span className="w-24 shrink-0 text-right">Hours</span>
-            </div>
-            <HighScoreRow
-              rank={userRank + 1}
-              name={userEntry.name}
-              hours={userEntry.hours}
-              avatarUrl={userEntry.avatarUrl}
-              isUser
-            />
+      <div className="mt-5 border-t border-line pt-5">
+        <BadgeLegend
+          archetype={profile.archetype}
+          streaks={data.streaks}
+          caps={profile}
+        />
+      </div>
+
+      {steam ? (
+        <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
+          <div>
+            <p className="text-xs text-fern">This week</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.week?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Today</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(periods.today?.minutes ?? 0)}
+            </p>
+          </div>
+          <div className="pl-4">
+            <p className="text-xs text-fern">Lifetime</p>
+            <p className="mt-1.5 text-xl tracking-tight text-paper">
+              {formatPlaytime(steam.playtimeMinutes)}
+            </p>
+            <p className="mt-1 text-xs text-muted">from Steam</p>
           </div>
         </div>
-      ) : (
-        steam && (
-          <div className="mt-auto grid grid-cols-3 divide-x divide-line border-t border-line pt-5">
-            <div>
-              <p className="text-xs text-fern">This week</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.week?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Today</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(periods.today?.minutes ?? 0)}
-              </p>
-            </div>
-            <div className="pl-4">
-              <p className="text-xs text-fern">Lifetime</p>
-              <p className="mt-1.5 text-xl tracking-tight text-paper">
-                {formatPlaytime(steam.playtimeMinutes)}
-              </p>
-              <p className="mt-1 text-xs text-muted">from Steam</p>
-            </div>
-          </div>
-        )
-      )}
+      ) : null}
     </Card>
   );
 
   return (
     <div className="space-y-6">
-      <PageIntro kicker={viewerIsOwner ? "Welcome back" : "Friend"} title={profile.displayName}>
+      <PageIntro
+        kicker={viewerIsOwner ? "Welcome back" : "Friend"}
+        title={
+          <NameWithBio name={profile.displayName} bio={profile.bio} font={profile.equippedFont} nameColor={profile.equippedNameColor} />
+        }
+        aside={
+          <BadgeRow
+            archetype={profile.archetype}
+            streaks={data.streaks}
+            caps={profile}
+            nowrap
+            className=""
+          />
+        }
+      >
         @{profile.username}
       </PageIntro>
 
       {leaderboard ? (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="h-full lg:col-span-2">{profileCard}</div>
-          <MiniLeaderboard entries={leaderboard} />
+          <div className="h-full lg:col-span-2">
+            <MiniLeaderboard
+              boards={leaderboard}
+              title={leaderboardTitle}
+              href={leaderboardHref}
+              featured
+              chartOnly
+              actionLabel={leaderboardHref.startsWith("/groups/") ? "Open group" : "View all"}
+              accent={leaderboardAccent}
+              description={leaderboardDescription}
+              goalHours={leaderboardGoalHours}
+            />
+          </div>
+          {profileCard}
         </div>
       ) : (
         profileCard

@@ -7,9 +7,12 @@ import { auth } from "@/lib/auth/server";
 import {
   getProfileByAuthUserId,
   isUsernameTaken,
+  normalizeBio,
   updateProfile,
+  validateBio,
   validateUsername,
 } from "@/lib/db/profiles";
+import { hoursInputToMinutes } from "@/lib/hours";
 import { isValidTimeZone } from "@/lib/playtime-windows";
 
 export type ProfileState = { error?: string; success?: string };
@@ -31,20 +34,50 @@ export async function updateProfileAction(
 ): Promise<ProfileState> {
   const username = String(formData.get("username") ?? "");
   const displayName = String(formData.get("displayName") ?? "").trim();
+  const bio = normalizeBio(String(formData.get("bio") ?? ""));
   const timeZone = String(formData.get("timeZone") ?? "UTC");
+  const capDayMinutes = hoursInputToMinutes(String(formData.get("capDayHours") ?? ""));
+  const capWeekMinutes = hoursInputToMinutes(String(formData.get("capWeekHours") ?? ""));
+  const capMonthMinutes = hoursInputToMinutes(
+    String(formData.get("capMonthHours") ?? ""),
+  );
 
   const usernameError = validateUsername(username);
   if (usernameError) return { error: usernameError };
+  const bioError = validateBio(bio);
+  if (bioError) return { error: bioError };
   if (!displayName) return { error: "Enter a display name." };
   if (!isValidTimeZone(timeZone)) return { error: "Choose a valid time zone." };
+  if (
+    capDayMinutes == null ||
+    capWeekMinutes == null ||
+    capMonthMinutes == null
+  ) {
+    return { error: "Enter hoped max hours for day, week, and month." };
+  }
 
   const { profile } = await requireProfile();
+  if (
+    profile.capDayMinutes == null ||
+    profile.capWeekMinutes == null ||
+    profile.capMonthMinutes == null
+  ) {
+    redirect("/onboarding");
+  }
 
   if (await isUsernameTaken(username, profile.id)) {
     return { error: "That username is taken." };
   }
 
-  await updateProfile(profile.id, { username, displayName, timeZone });
+  await updateProfile(profile.id, {
+    username,
+    displayName,
+    timeZone,
+    bio,
+    capDayMinutes,
+    capWeekMinutes,
+    capMonthMinutes,
+  });
 
   // Keep the Neon Auth user's name in step with the profile.
   await auth.updateUser({ name: displayName });
