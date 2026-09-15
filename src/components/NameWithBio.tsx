@@ -27,7 +27,7 @@ export default function NameWithBio({
   );
 
   return (
-    <BioHover name={name} bio={bio}>
+    <BioHover name={name} bio={bio} font={font}>
       {label}
     </BioHover>
   );

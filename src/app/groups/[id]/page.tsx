@@ -202,6 +202,7 @@ export default async function GroupPage({
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
+                  font={row.profile.equippedFont}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
@@ -256,6 +257,7 @@ export default async function GroupPage({
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
                 frame={row.profile.equippedFrame}
+                font={row.profile.equippedFont}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio
@@ -301,6 +303,7 @@ export default async function GroupPage({
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                   frame={row.profile.equippedFrame}
+                  font={row.profile.equippedFont}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
@@ -338,6 +341,7 @@ export default async function GroupPage({
                   bio={member.profile.bio}
                   avatarUrl={member.profile.avatarUrl}
                   frame={member.profile.equippedFrame}
+                  font={member.profile.equippedFont}
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (

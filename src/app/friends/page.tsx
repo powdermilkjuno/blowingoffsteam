@@ -80,6 +80,7 @@ export default async function FriendsPage() {
                   bio={sender.bio}
                   avatarUrl={sender.avatarUrl}
                   frame={sender.equippedFrame}
+                  font={sender.equippedFont}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -134,6 +135,7 @@ export default async function FriendsPage() {
                   bio={target.bio}
                   avatarUrl={target.avatarUrl}
                   frame={target.equippedFrame}
+                  font={target.equippedFont}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -184,6 +186,7 @@ export default async function FriendsPage() {
                   bio={friend.bio}
                   avatarUrl={friend.avatarUrl}
                   frame={friend.equippedFrame}
+                  font={friend.equippedFont}
                 />
 
                 <div className="min-w-0 flex-1">
