@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   listAcceptedMembers,
@@ -15,47 +14,12 @@ import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import PageIntro from "@/components/PageIntro";
-import NameWithBio from "@/components/NameWithBio";
+import AvatarWithBio from "@/components/AvatarWithBio";
 import FavoriteStarButton from "@/components/FavoriteStarButton";
 import { acceptJoinAction, declineJoinAction, toggleFavoriteAction } from "./actions";
 import { CreateGroupForm } from "./create-group-form";
 
 export const dynamic = "force-dynamic";
-
-function initials(name: string): string {
-  return name
-    .split(/[_\s.]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
-function Avatar({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl?: string | null;
-}) {
-  if (avatarUrl) {
-    return (
-      <Image
-        src={avatarUrl}
-        alt=""
-        width={32}
-        height={32}
-        className="h-8 w-8 shrink-0 rounded object-cover"
-      />
-    );
-  }
-  return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-moss/70 font-mono text-[10px] text-paper">
-      {initials(name)}
-    </span>
-  );
-}
 
 function ordinal(n: number): string {
   const rem100 = n % 100;
@@ -123,16 +87,13 @@ export default async function GroupsPage() {
                 key={`${row.group.id}-${row.profile.id}`}
                 className="flex items-center gap-3 py-3 text-sm"
               >
-                <Avatar
+                <AvatarWithBio
                   name={row.profile.displayName}
+                  bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
                 />
                 <div className="min-w-0 flex-1">
-                  <NameWithBio
-                    name={row.profile.displayName}
-                    bio={row.profile.bio}
-                    className="truncate text-paper"
-                  />
+                  <p className="truncate text-paper">{row.profile.displayName}</p>
                   <p className="text-xs text-muted">
                     wants to join {row.group.name}
                   </p>
@@ -224,16 +185,13 @@ function GroupOverviewCard({
               <span className="w-10 shrink-0 text-xs text-clay">
                 {ordinal(row.place)}
               </span>
-              <Avatar
+              <AvatarWithBio
                 name={row.profile.displayName}
+                bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
               />
               <div className="min-w-0 flex-1">
-                <NameWithBio
-                  name={row.profile.displayName}
-                  bio={row.profile.bio}
-                  className="truncate"
-                />
+                <p className="truncate">{row.profile.displayName}</p>
               </div>
               <span className="tabular-nums">
                 {formatPlaytime(row.minutes)}

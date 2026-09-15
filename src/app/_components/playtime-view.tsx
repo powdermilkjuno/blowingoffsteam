@@ -1,4 +1,3 @@
-import Image from "next/image";
 import type { DashboardData, LeaderboardEntry } from "@/lib/dashboard-data";
 import { formatPlaytime } from "@/lib/db/profiles";
 import type { PeriodDelta } from "@/lib/db/daily";
@@ -9,7 +8,7 @@ import MiniLeaderboard from "@/components/MiniLeaderboard";
 import HighScoreRow from "@/components/HighScoreRow";
 import { SteamButton } from "../auth/_components/social-buttons";
 import { RefreshPlaytimeButton } from "../dashboard/refresh-button";
-import NameWithBio from "@/components/NameWithBio";
+import AvatarWithBio from "@/components/AvatarWithBio";
 import { BadgeRow } from "@/components/StreakBadge";
 import { GameList } from "./game-list";
 
@@ -31,19 +30,12 @@ export function PlaytimeView({
   const profileCard = (
     <Card className="corners flex h-full flex-col p-6" radius="lg">
       <div className="flex items-start gap-4">
-        {profile.avatarUrl ? (
-          <Image
-            src={profile.avatarUrl}
-            alt=""
-            width={56}
-            height={56}
-            className="rounded"
-          />
-        ) : (
-          <div className="grid size-14 place-items-center rounded bg-moss/70 text-lg text-paper">
-            {profile.displayName.slice(0, 1).toUpperCase()}
-          </div>
-        )}
+        <AvatarWithBio
+          name={profile.displayName}
+          bio={profile.bio}
+          avatarUrl={profile.avatarUrl}
+          size={56}
+        />
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm text-paper">{profile.displayName}</p>
@@ -120,9 +112,7 @@ export function PlaytimeView({
     <div className="space-y-6">
       <PageIntro
         kicker={viewerIsOwner ? "Welcome back" : "Friend"}
-        title={
-          <NameWithBio name={profile.displayName} bio={profile.bio} />
-        }
+        title={profile.displayName}
         aside={
           <BadgeRow
             archetype={profile.archetype}
