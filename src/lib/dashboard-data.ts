@@ -21,13 +21,13 @@ import {
   PERIOD_DAYS,
 } from "./playtime-windows";
 import type { GamePlaytime } from "./steam-api";
-
+ 
 export type DashboardGame = GamePlaytime & {
   todayMinutes: number;
   weekMinutes: number;
   lastHeldDay: string | null;
 };
-
+ 
 export type DashboardData = {
   profile: Profile;
   steam: SteamLink | null;
@@ -35,7 +35,7 @@ export type DashboardData = {
   periods: PlaytimePeriods;
   displayTimeZone: string;
 };
-
+ 
 export async function loadDashboard(
   profile: Profile,
   opts?: { displayTimeZone?: string },
@@ -45,7 +45,7 @@ export async function loadDashboard(
   const displayTimeZone = resolveTimeZone(
     opts?.displayTimeZone ?? profile.timeZone,
   );
-
+ 
   if (steam && isStale(steam.syncedAt)) {
     try {
       await syncLinkedPlaytime({
@@ -58,11 +58,11 @@ export async function loadDashboard(
       // Serve the last held totals if Steam is unreachable.
     }
   }
-
+ 
   const now = new Date();
   const today = dayStringInZone(now, timeZone);
   const library = steam ? await getProfileGames(profile.id) : [];
-
+ 
   if (steam?.playtimePublic && library.length > 0) {
     await seedMissingDailyFromSteamWindow({
       profileId: profile.id,
@@ -71,7 +71,7 @@ export async function loadDashboard(
       timeZone,
     });
   }
-
+ 
   const steamTwoWeeks = library.reduce(
     (sum, game) => sum + game.playtimeTwoWeeksMinutes,
     0,
@@ -89,7 +89,7 @@ export async function loadDashboard(
         week: null,
         month: null,
       };
-
+ 
   const weekStart = rollingStartDay(today, PERIOD_DAYS.week);
   const [todayByApp, weekByApp, heldDayByApp] = await Promise.all([
     sumDailyMinutesByApp({ profileId: profile.id, fromDay: today, toDay: today }),
@@ -100,39 +100,40 @@ export async function loadDashboard(
     }),
     lastHeldDayByApp(profile.id),
   ]);
-
+ 
   const games = library.map((game) => ({
     ...game,
     todayMinutes: todayByApp.get(game.appId) ?? 0,
     weekMinutes: weekByApp.get(game.appId) ?? 0,
     lastHeldDay: heldDayByApp.get(game.appId) ?? null,
   }));
-
+ 
   return { profile, steam, games, periods, displayTimeZone };
 }
-
+ 
 export type LeaderboardEntry = {
   name: string;
   hours: number;
   avatarUrl?: string;
   isUser?: boolean;
 };
-
+ 
 export type LeaderboardBoards = {
+  today: LeaderboardEntry[];
   week: LeaderboardEntry[];
   month: LeaderboardEntry[];
   all: LeaderboardEntry[];
 };
-
+ 
 function hoursFromMinutes(minutes: number): number {
   return Math.round((minutes / 60) * 10) / 10;
 }
-
+ 
 function rankBoard(
   rows: { name: string; minutes: number; avatarUrl: string; isUser: boolean }[],
 ): LeaderboardEntry[] {
   return [...rows]
-    .sort((a, b) => a.minutes - b.minutes)
+    .sort((a, b) => b.minutes - a.minutes)
     .map((row) => ({
       name: row.name,
       hours: hoursFromMinutes(row.minutes),
@@ -140,14 +141,14 @@ function rankBoard(
       isUser: row.isUser,
     }));
 }
-
+ 
 export async function loadLeaderboard(
   viewer: Profile,
 ): Promise<LeaderboardBoards> {
   const friends = await listFriends(viewer.id);
   const people = [viewer, ...friends];
   const now = new Date();
-
+ 
   const scored = await Promise.all(
     people.map(async (person) => {
       const steam = await getSteamLink(person.id);
@@ -160,14 +161,23 @@ export async function loadLeaderboard(
         name: person.username,
         avatarUrl: person.avatarUrl,
         isUser: person.id === viewer.id,
+        today: periods?.today?.minutes ?? 0,
         week: periods?.week?.minutes ?? 0,
         month: periods?.month?.minutes ?? 0,
         all: steam?.playtimeMinutes ?? 0,
       };
     }),
   );
-
+ 
   return {
+    today: rankBoard(
+      scored.map((row) => ({
+        name: row.name,
+        minutes: row.today,
+        avatarUrl: row.avatarUrl,
+        isUser: row.isUser,
+      })),
+    ),
     week: rankBoard(
       scored.map((row) => ({
         name: row.name,

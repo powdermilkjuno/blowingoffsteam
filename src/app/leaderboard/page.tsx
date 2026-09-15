@@ -19,8 +19,9 @@ export default async function LeaderboardPage() {
   const boards = await loadLeaderboard(profile);
 
   return (
-    <AppShell active="leaderboard" displayName={profile.displayName}>
-      <PageIntro kicker="This week" title="Leaderboard" />
+    <AppShell active="leaderboard" displayName={profile.displayName} wide>
+      <PageIntro  title="Leaderboard">
+      </PageIntro>
 
       <Card className="corners overflow-hidden p-5" radius="sm">
         <LeaderboardTabs boards={boards} />
