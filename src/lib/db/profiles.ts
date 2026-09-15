@@ -52,6 +52,10 @@ export type Profile = {
   capWeekMinutes: number | null;
   capMonthMinutes: number | null;
   bio: string;
+  walletPoints: number;
+  equippedFrame: string;
+  equippedFont: string;
+  equippedSiteTheme: string;
   createdAt: Date;
 };
 
@@ -178,6 +182,10 @@ export function toProfile(row: typeof profiles.$inferSelect): Profile {
     capWeekMinutes: row.capWeekMinutes,
     capMonthMinutes: row.capMonthMinutes,
     bio: row.bio ?? "",
+    walletPoints: row.walletPoints ?? 0,
+    equippedFrame: row.equippedFrame || "frame:none",
+    equippedFont: row.equippedFont || "font:mono",
+    equippedSiteTheme: row.equippedSiteTheme || "theme:default",
     createdAt: row.createdAt,
   };
 }

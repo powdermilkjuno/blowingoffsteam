@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { addUtcDays, dayStringInZone } from "../playtime-windows";
 import { listAcceptedMembers, listAllGroups, rankMembersForDay } from "./groups";
 import { getDb } from "./index";
-import { groupDailyScores } from "./schema";
+import { groupDailyScores, profiles } from "./schema";
 
 export type GroupAwardResult = {
   groups: number;
@@ -48,7 +48,7 @@ export async function awardGroupDailyPoints(
 
     const ranked = await rankMembersForDay(members, yesterday);
 
-    await getDb()
+    const inserted = await getDb()
       .insert(groupDailyScores)
       .values(
         ranked.map((row) => ({
@@ -60,7 +60,18 @@ export async function awardGroupDailyPoints(
           points: row.points,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning();
+
+    for (const row of inserted) {
+      if (row.points <= 0) continue;
+      await getDb()
+        .update(profiles)
+        .set({
+          walletPoints: sql`${profiles.walletPoints} + ${row.points}`,
+        })
+        .where(eq(profiles.id, row.profileId));
+    }
 
     result.awarded += 1;
   }

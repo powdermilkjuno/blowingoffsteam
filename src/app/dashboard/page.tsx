@@ -33,7 +33,7 @@ export default async function DashboardPage({
   const leaderboardHref = featured ? `/groups/${featured.id}` : "/leaderboard";
 
   return (
-    <AppShell active="dashboard" displayName={profile.displayName} wide>
+    <AppShell active="dashboard" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme} wide>
       {errorMessage && (
         <p className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {errorMessage}

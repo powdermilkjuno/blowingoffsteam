@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono, Press_Start_2P } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  JetBrains_Mono,
+  Libre_Baskerville,
+  Press_Start_2P,
+} from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,6 +32,13 @@ const pressStart = Press_Start_2P({
   display: "swap",
 });
 
+const libreBaskerville = Libre_Baskerville({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-libre",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Blowing Off Steam — track your playtime",
   description:
@@ -39,6 +52,10 @@ const themeInitScript = `
     var theme = stored === "light" || stored === "dark" ? stored : "dark";
     document.documentElement.classList.remove("light", "dark");
     document.documentElement.classList.add(theme);
+    var match = document.cookie.match(/(?:^|; )bos-site-pack=([^;]*)/);
+    var pack = match ? decodeURIComponent(match[1]) : "default";
+    if (pack !== "dusk" && pack !== "ember" && pack !== "terminal") pack = "default";
+    document.documentElement.setAttribute("data-site-pack", pack);
   } catch (err) {}
 })();
 `;
@@ -47,7 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${pressStart.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${pressStart.variable} ${libreBaskerville.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

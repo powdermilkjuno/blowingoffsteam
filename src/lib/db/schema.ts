@@ -27,6 +27,10 @@ export const profiles = pgTable("profiles", {
   capWeekMinutes: integer("cap_week_minutes"),
   capMonthMinutes: integer("cap_month_minutes"),
   bio: text("bio").notNull().default(""),
+  walletPoints: integer("wallet_points").notNull().default(0),
+  equippedFrame: text("equipped_frame").notNull().default("frame:none"),
+  equippedFont: text("equipped_font").notNull().default("font:mono"),
+  equippedSiteTheme: text("equipped_site_theme").notNull().default("theme:default"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -134,28 +138,33 @@ export const friendships = pgTable(
   ],
 );
 
-export const groups = pgTable(
-  "groups",
+export const groups = pgTable("groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  inviteToken: text("invite_token").notNull().unique(),
+  ownerProfileId: uuid("owner_profile_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  timeZone: text("time_zone").notNull().default("UTC"),
+  description: text("description").notNull().default(""),
+  accent: text("accent").notNull().default("clay"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const profileInventory = pgTable(
+  "profile_inventory",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: text("name").notNull(),
-    inviteToken: text("invite_token").notNull().unique(),
-    ownerProfileId: uuid("owner_profile_id")
+    profileId: uuid("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    timeZone: text("time_zone").notNull().default("UTC"),
-    description: text("description").notNull().default(""),
-    accent: text("accent").notNull().default("clay"),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    itemId: text("item_id").notNull(),
+    acquiredAt: timestamp("acquired_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (table) => [
-    check(
-      "groups_accent",
-      sql`${table.accent} in ('clay', 'fern', 'signal', 'moss', 'paper')`,
-    ),
-  ],
+  (table) => [primaryKey({ columns: [table.profileId, table.itemId] })],
 );
 
 export const groupMembers = pgTable(

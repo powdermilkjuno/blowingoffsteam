@@ -55,7 +55,7 @@ export default async function GroupsPage() {
   const overviews = await Promise.all(mine.map(loadGroupOverview));
 
   return (
-    <AppShell active="groups" displayName={profile.displayName}>
+    <AppShell active="groups" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
       <PageIntro kicker="Compete" title="Groups">
         Live held minutes for today. Lowest time is winning right now.
       </PageIntro>
@@ -93,12 +93,14 @@ export default async function GroupsPage() {
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
+                  frame={row.profile.equippedFrame}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate text-paper"
+                    font={row.profile.equippedFont}
                   />
                   <p className="text-xs text-muted">
                     wants to join {row.group.name}
@@ -153,7 +155,7 @@ function GroupOverviewCard({
   const accent = GROUP_ACCENTS[group.accent];
 
   return (
-    <Card className={`corners p-5 ${accent.border}`} radius="sm">
+    <Card tone="plain" className={`corners p-5 ${accent.card}`} radius="sm">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <Link
@@ -204,12 +206,14 @@ function GroupOverviewCard({
                 name={row.profile.displayName}
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
+                frame={row.profile.equippedFrame}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   className="truncate"
+                  font={row.profile.equippedFont}
                 />
               </div>
               <span className="tabular-nums">

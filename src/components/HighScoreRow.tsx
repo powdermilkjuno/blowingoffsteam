@@ -45,6 +45,8 @@ export default function HighScoreRow({
   archetype,
   streaks,
   caps,
+  frame,
+  font,
 }: {
   rank: number;
   name: string;
@@ -62,6 +64,8 @@ export default function HighScoreRow({
     capWeekMinutes: number | null;
     capMonthMinutes: number | null;
   };
+  frame?: string | null;
+  font?: string | null;
 }) {
   return (
     <div
@@ -85,6 +89,7 @@ export default function HighScoreRow({
         avatarUrl={avatarUrl}
         size={28}
         className={isUser ? "bg-signal/25 text-signal" : ""}
+        frame={frame}
       />
 
       <span className="min-w-0 flex-1">
@@ -92,6 +97,7 @@ export default function HighScoreRow({
           name={name}
           bio={bio}
           className="block truncate normal-case"
+          font={font}
         />
         {showBadges ? (
           <BadgeRow archetype={archetype} streaks={streaks} caps={caps} />

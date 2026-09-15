@@ -140,6 +140,8 @@ export type LeaderboardEntry = {
     capWeekMinutes: number | null;
     capMonthMinutes: number | null;
   };
+  frame?: string;
+  font?: string;
 };
 
 export type LeaderboardBoards = {
@@ -182,6 +184,8 @@ type ScoredPerson = {
   archetype: Archetype | null;
   streaks: Streaks;
   caps: LeaderboardEntry["caps"];
+  frame: string;
+  font: string;
   today: number;
   week: number;
   month: number;
@@ -198,6 +202,8 @@ function rankBoard(
     archetype: Archetype | null;
     streaks: Streaks;
     caps: LeaderboardEntry["caps"];
+    frame?: string;
+    font?: string;
   }[],
 ): LeaderboardEntry[] {
   return [...rows]
@@ -211,6 +217,8 @@ function rankBoard(
       archetype: row.archetype,
       streaks: row.streaks,
       caps: row.caps,
+      frame: row.frame,
+      font: row.font,
     }));
 }
 
@@ -223,6 +231,8 @@ function boardsFromScored(scored: ScoredPerson[]): LeaderboardBoards {
     archetype: row.archetype,
     streaks: row.streaks,
     caps: row.caps,
+    frame: row.frame,
+    font: row.font,
   });
 
   return {
@@ -273,6 +283,8 @@ async function scorePeople(
           capWeekMinutes: person.capWeekMinutes,
           capMonthMinutes: person.capMonthMinutes,
         },
+        frame: person.equippedFrame,
+        font: person.equippedFont,
       };
     }),
   );

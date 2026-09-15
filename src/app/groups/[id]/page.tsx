@@ -14,6 +14,8 @@ import {
   rankMembersForDay,
 } from "@/lib/db/groups";
 import { GROUP_ACCENTS } from "@/lib/group-accent";
+import { listInventoryIds } from "@/lib/db/shop";
+import { ownedGroupAccents } from "@/lib/shop-catalog";
 import {
   formatHeldDay,
   formatPlaytime,
@@ -74,7 +76,7 @@ export default async function GroupPage({
   const membership = await getMembership(group.id, viewer.id);
   if (!membership || membership.status !== "accepted") {
     return (
-      <AppShell active="groups" displayName={viewer.displayName}>
+      <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
         <Card className="corners space-y-3 p-6">
           <h1 className="text-sm text-paper">You are not in {group.name}</h1>
           <p className="text-sm text-muted">
@@ -94,13 +96,18 @@ export default async function GroupPage({
   const today = dayStringInZone(new Date(), group.timeZone);
   const yesterday = addUtcDays(today, -1);
 
-  const [members, pending, points, latestDay, origin] = await Promise.all([
+  const [members, pending, points, latestDay, origin, inventory] = await Promise.all([
     listAcceptedMembers(group.id),
     isOwner ? listPendingMembers(group.id) : Promise.resolve([]),
     listMemberPoints(group.id),
     getLatestScoreDay(group.id),
     resolveAppUrl(),
+    listInventoryIds(viewer.id),
   ]);
+  const pickerAccents = ownedGroupAccents(inventory);
+  if (!pickerAccents.includes(group.accent)) {
+    pickerAccents.unshift(group.accent);
+  }
 
   const [live, lastScores, friendships, memberStreaks] = await Promise.all([
     rankMembersForDay(members, today),
@@ -133,7 +140,7 @@ export default async function GroupPage({
   const inviteUrl = `${origin}/groups/join/${group.inviteToken}`;
 
   return (
-    <AppShell active="groups" displayName={viewer.displayName}>
+    <AppShell active="groups" displayName={viewer.displayName} walletPoints={viewer.walletPoints} sitePack={viewer.equippedSiteTheme}>
       <Link href="/groups" className="text-xs text-fern hover:text-signal">
         ← Back to groups
       </Link>
@@ -161,6 +168,7 @@ export default async function GroupPage({
             groupId={group.id}
             description={group.description}
             accent={group.accent}
+            ownedAccents={pickerAccents}
           />
         </Card>
       ) : null}
@@ -193,12 +201,14 @@ export default async function GroupPage({
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
+                  frame={row.profile.equippedFrame}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate text-paper"
+                    font={row.profile.equippedFont}
                   />
                   <p className="text-xs text-muted">@{row.profile.username}</p>
                 </div>
@@ -245,12 +255,14 @@ export default async function GroupPage({
                 name={row.profile.displayName}
                 bio={row.profile.bio}
                 avatarUrl={row.profile.avatarUrl}
+                frame={row.profile.equippedFrame}
               />
               <div className="min-w-0 flex-1">
                 <NameWithBio
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   className="truncate"
+                  font={row.profile.equippedFont}
                 />
                 <BadgeRow
                   archetype={row.profile.archetype}
@@ -288,12 +300,14 @@ export default async function GroupPage({
                   name={row.profile.displayName}
                   bio={row.profile.bio}
                   avatarUrl={row.profile.avatarUrl}
+                  frame={row.profile.equippedFrame}
                 />
                 <div className="min-w-0 flex-1">
                   <NameWithBio
                     name={row.profile.displayName}
                     bio={row.profile.bio}
                     className="truncate"
+                    font={row.profile.equippedFont}
                   />
                 </div>
                 <span className="text-xs text-muted">
@@ -323,6 +337,7 @@ export default async function GroupPage({
                   name={member.profile.displayName}
                   bio={member.profile.bio}
                   avatarUrl={member.profile.avatarUrl}
+                  frame={member.profile.equippedFrame}
                 />
                 <div className="min-w-0 flex-1">
                   {isSelf || status === "accepted" ? (
@@ -331,12 +346,14 @@ export default async function GroupPage({
                       bio={member.profile.bio}
                       href={isSelf ? "/dashboard" : `/u/${member.profile.username}`}
                       className="truncate text-paper hover:text-signal"
+                      font={member.profile.equippedFont}
                     />
                   ) : (
                     <NameWithBio
                       name={member.profile.displayName}
                       bio={member.profile.bio}
                       className="truncate text-paper"
+                      font={member.profile.equippedFont}
                     />
                   )}
                   <p className="text-xs text-muted">

@@ -2,8 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { inputClass, labelClass } from "../auth/_components/auth-shell";
-import { GROUP_ACCENT_IDS, GROUP_ACCENTS, type GroupAccent } from "@/lib/group-accent";
+import { GROUP_ACCENTS, type GroupAccent } from "@/lib/group-accent";
 import { updateGroupPresentationAction, type GroupFormState } from "./actions";
+import Link from "next/link";
 
 const DESCRIPTION_MAX = 120;
 
@@ -11,10 +12,12 @@ export function GroupPresentationForm({
   groupId,
   description,
   accent,
+  ownedAccents,
 }: {
   groupId: string;
   description: string;
   accent: GroupAccent;
+  ownedAccents: GroupAccent[];
 }) {
   const [state, action, pending] = useActionState<GroupFormState, FormData>(
     updateGroupPresentationAction,
@@ -57,7 +60,7 @@ export function GroupPresentationForm({
       <fieldset className="space-y-2">
         <legend className={labelClass}>Accent</legend>
         <div className="flex flex-wrap gap-2">
-          {GROUP_ACCENT_IDS.map((id) => {
+          {ownedAccents.map((id) => {
             const selected = accentValue === id;
             return (
               <button
@@ -80,6 +83,13 @@ export function GroupPresentationForm({
             );
           })}
         </div>
+        <p className="text-xs text-muted">
+          More colors in the{" "}
+          <Link href="/shop" className="text-fern hover:text-signal">
+            Shop
+          </Link>
+          .
+        </p>
       </fieldset>
 
       <button

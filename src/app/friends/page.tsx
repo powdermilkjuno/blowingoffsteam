@@ -36,7 +36,7 @@ export default async function FriendsPage() {
   const streaksById = new Map(friendStreaks);
 
   return (
-    <AppShell active="friends" displayName={profile.displayName}>
+    <AppShell active="friends" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
       <PageIntro kicker="Compare" title="Friends">
         Swap codes, accept invites, then compare libraries.
       </PageIntro>
@@ -79,6 +79,7 @@ export default async function FriendsPage() {
                   name={sender.displayName}
                   bio={sender.bio}
                   avatarUrl={sender.avatarUrl}
+                  frame={sender.equippedFrame}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -86,6 +87,7 @@ export default async function FriendsPage() {
                     name={sender.displayName}
                     bio={sender.bio}
                     className="truncate text-paper"
+                    font={sender.equippedFont}
                   />
                   <p className="text-xs text-muted">@{sender.username}</p>
                 </div>
@@ -131,6 +133,7 @@ export default async function FriendsPage() {
                   name={target.displayName}
                   bio={target.bio}
                   avatarUrl={target.avatarUrl}
+                  frame={target.equippedFrame}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -138,6 +141,7 @@ export default async function FriendsPage() {
                     name={target.displayName}
                     bio={target.bio}
                     className="truncate text-paper"
+                    font={target.equippedFont}
                   />
                   <p className="text-xs text-muted">@{target.username}</p>
                 </div>
@@ -179,6 +183,7 @@ export default async function FriendsPage() {
                   name={friend.displayName}
                   bio={friend.bio}
                   avatarUrl={friend.avatarUrl}
+                  frame={friend.equippedFrame}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -187,6 +192,7 @@ export default async function FriendsPage() {
                     bio={friend.bio}
                     href={`/u/${friend.username}`}
                     className="truncate text-paper hover:text-signal"
+                    font={friend.equippedFont}
                   />
                   <BadgeRow
                     archetype={friend.archetype}
