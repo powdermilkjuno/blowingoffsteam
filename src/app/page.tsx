@@ -35,8 +35,6 @@ export default async function LandingPage() {
       </header>
 
       <section className="relative mx-auto max-w-6xl px-6 pb-20 pt-10 md:pt-16">
-        <div className="grid-fade pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px]" />
-        <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-105" />
         <div className="grid-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]" />
         <div className="steam-field -z-10" />
 
