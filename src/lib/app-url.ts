@@ -14,6 +14,14 @@ export async function resolveAppUrl(): Promise<string> {
   return `${proto}://${host}`;
 }
 
+export function safeAppPath(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const path = raw.trim();
+  if (!path.startsWith("/") || path.startsWith("//")) return null;
+  if (path.includes("://") || path.includes("\\")) return null;
+  return path;
+}
+
 export function getAppUrl(request: Request): string {
   const configured = process.env.APP_URL?.replace(/\/$/, "");
   if (configured) return configured;

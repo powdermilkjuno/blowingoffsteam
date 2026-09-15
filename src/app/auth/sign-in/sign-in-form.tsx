@@ -13,10 +13,12 @@ export function SignInForm({
   initialError,
   defaultEmail = "",
   lockEmail = false,
+  next = "/dashboard",
 }: {
   initialError?: string;
   defaultEmail?: string;
   lockEmail?: boolean;
+  next?: string;
 }) {
   const [state, action, pending] = useActionState<SignInState, FormData>(
     signInAction,
@@ -26,6 +28,7 @@ export function SignInForm({
   return (
     <form action={action} className="space-y-4">
       <FieldError message={state.error} />
+      <input type="hidden" name="next" value={next} />
 
       <div className="space-y-1">
         <label className={labelClass} htmlFor="email">

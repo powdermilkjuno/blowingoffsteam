@@ -4,7 +4,13 @@ import Image from "next/image";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
 
-export function GoogleButton({ label }: { label: string }) {
+export function GoogleButton({
+  label,
+  callbackURL = "/dashboard",
+}: {
+  label: string;
+  callbackURL?: string;
+}) {
   const [pending, setPending] = useState(false);
 
   return (
@@ -15,7 +21,7 @@ export function GoogleButton({ label }: { label: string }) {
         setPending(true);
         await authClient.signIn.social({
           provider: "google",
-          callbackURL: "/dashboard",
+          callbackURL,
         });
       }}
       className="flex w-full items-center justify-center gap-2 rounded-sm border border-line bg-surface px-4 py-2 text-sm text-paper hover:border-fern hover:bg-raised disabled:opacity-60"

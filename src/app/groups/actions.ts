@@ -11,6 +11,7 @@ import {
   deleteGroup,
   kickMember,
   leaveGroup,
+  parseInviteInput,
   requestJoin,
   rotateInviteToken,
   setMemberRole,
@@ -49,20 +50,37 @@ export async function createGroupAction(
   redirect(`/groups/${result.value.id}`);
 }
 
+export async function openJoinAction(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const profile = await requireProfile();
+  const token = parseInviteInput(String(formData.get("invite") ?? ""));
+  if (!token) {
+    return { error: "Enter the 12-character invite code, or paste a join link." };
+  }
+
+  const result = await requestJoin(profile.id, token);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${result.value.group.id}`);
+  redirect(`/groups/${result.value.group.id}`);
+}
+
 export async function requestJoinAction(formData: FormData) {
   const token = String(formData.get("token") ?? "");
   if (!token) return;
 
   const profile = await requireProfile();
-  const result = await requestJoin(profile.id, token);
+  const parsed = parseInviteInput(token) ?? token.trim().toUpperCase();
+  const result = await requestJoin(profile.id, parsed);
   if (!result.ok) {
-    redirect(`/groups/join/${token}?error=${encodeURIComponent(result.error)}`);
-  }
-  if (result.value.status === "accepted") {
-    redirect(`/groups/${result.value.group.id}`);
+    redirect(`/groups/join/${encodeURIComponent(token)}?error=${encodeURIComponent(result.error)}`);
   }
   revalidatePath("/groups");
-  redirect(`/groups/join/${result.value.group.inviteToken}`);
+  revalidatePath(`/groups/${result.value.group.id}`);
+  redirect(`/groups/${result.value.group.id}`);
 }
 
 export async function acceptJoinAction(formData: FormData) {
@@ -113,6 +131,7 @@ export async function rotateInviteAction(formData: FormData) {
 
   const profile = await requireProfile();
   await rotateInviteToken(profile.id, groupId);
+  revalidatePath("/groups");
   revalidatePath(`/groups/${groupId}`);
 }
 
