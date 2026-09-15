@@ -134,18 +134,29 @@ export const friendships = pgTable(
   ],
 );
 
-export const groups = pgTable("groups", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  inviteToken: text("invite_token").notNull().unique(),
-  ownerProfileId: uuid("owner_profile_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  timeZone: text("time_zone").notNull().default("UTC"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const groups = pgTable(
+  "groups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    inviteToken: text("invite_token").notNull().unique(),
+    ownerProfileId: uuid("owner_profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    timeZone: text("time_zone").notNull().default("UTC"),
+    description: text("description").notNull().default(""),
+    accent: text("accent").notNull().default("clay"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "groups_accent",
+      sql`${table.accent} in ('clay', 'fern', 'signal', 'moss', 'paper')`,
+    ),
+  ],
+);
 
 export const groupMembers = pgTable(
   "group_members",
@@ -167,7 +178,7 @@ export const groupMembers = pgTable(
   (table) => [
     primaryKey({ columns: [table.groupId, table.profileId] }),
     index("group_members_profile_idx").on(table.profileId),
-    check("group_members_role", sql`${table.role} in ('owner', 'member')`),
+    check("group_members_role", sql`${table.role} in ('owner', 'co_owner', 'member')`),
     check(
       "group_members_status",
       sql`${table.status} in ('pending', 'accepted')`,

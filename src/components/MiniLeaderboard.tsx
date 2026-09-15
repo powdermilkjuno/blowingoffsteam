@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/lib/dashboard-data";
+import { GROUP_ACCENTS, type GroupAccent } from "@/lib/group-accent";
 import Card from "@/components/Card";
 import HighScoreRow from "@/components/HighScoreRow";
 
@@ -9,21 +10,34 @@ export default function MiniLeaderboard({
   title = "Leaderboard",
   featured = false,
   actionLabel = "View all",
+  accent,
+  description,
 }: {
   entries: LeaderboardEntry[];
   href?: string;
   title?: string;
   featured?: boolean;
   actionLabel?: string;
+  accent?: GroupAccent;
+  description?: string;
 }) {
   const visible = featured ? Math.max(entries.length, 1) : 3;
   const rows = entries.slice(0, visible);
+  const tint = accent ? GROUP_ACCENTS[accent] : null;
 
   return (
-    <Card className="corners flex h-full flex-col p-5" radius="lg">
+    <Card
+      className={`corners flex h-full flex-col p-5 ${tint?.border ?? ""}`}
+      radius="lg"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="truncate text-sm text-paper">{title}</h2>
+          <h2 className={`truncate text-sm ${tint?.title ?? "text-paper"}`}>
+            {title}
+          </h2>
+          {description ? (
+            <p className="mt-0.5 truncate text-xs text-muted">{description}</p>
+          ) : null}
           <p className="mt-0.5 text-[10px] text-muted">Today</p>
         </div>
         <Link href={href} className="shrink-0 text-xs text-fern hover:text-signal">

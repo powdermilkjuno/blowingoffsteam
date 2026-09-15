@@ -50,6 +50,13 @@
       "when": 1789435000000,
       "tag": "0006_profile_bio",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789436000000,
+      "tag": "0007_group_roles",
+      "breakpoints": true
     }
   ]
 }

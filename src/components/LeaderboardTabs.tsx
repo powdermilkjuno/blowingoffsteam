@@ -6,6 +6,7 @@ import type {
   LeaderboardEntry,
   LeaderboardGroupBoard,
 } from "@/lib/dashboard-data";
+import { GROUP_ACCENTS, type GroupAccent } from "@/lib/group-accent";
 import HighScoreRow from "@/components/HighScoreRow";
 
 const tabs = [
@@ -47,6 +48,8 @@ export default function LeaderboardTabs({
         <Board
           title={group.starred ? `Starred · ${group.name}` : group.name}
           rows={group.boards[period]}
+          accent={group.accent}
+          description={group.description}
         />
       ) : (
         <p className="mt-5 text-sm text-muted">
@@ -60,12 +63,31 @@ export default function LeaderboardTabs({
   );
 }
 
-function Board({ title, rows }: { title: string; rows: LeaderboardEntry[] }) {
+function Board({
+  title,
+  rows,
+  accent,
+  description,
+}: {
+  title: string;
+  rows: LeaderboardEntry[];
+  accent?: GroupAccent;
+  description?: string;
+}) {
+  const tint = accent ? GROUP_ACCENTS[accent] : null;
+
   return (
-    <div className="scanlines -mx-5 mt-5 overflow-visible border-t border-line bg-raised px-4 pb-5 pt-6 last:-mb-5">
-      <h3 className="text-center font-pixel text-base tracking-wide text-clay">
+    <div
+      className={`scanlines -mx-5 mt-5 overflow-visible border-t border-line bg-raised px-4 pb-5 pt-6 last:-mb-5 ${tint?.border ?? ""}`}
+    >
+      <h3
+        className={`text-center font-pixel text-base tracking-wide ${tint?.title ?? "text-clay"}`}
+      >
         {title}
       </h3>
+      {description ? (
+        <p className="mt-2 text-center text-xs text-muted">{description}</p>
+      ) : null}
 
       <div className="mt-6 flex items-center gap-3 px-4 pb-2 font-pixel text-[10px] tracking-wide text-fern">
         <span className="w-14 shrink-0">Rank</span>

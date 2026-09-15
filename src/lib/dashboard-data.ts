@@ -4,6 +4,7 @@ import {
   listGroupsForProfile,
   type GroupListItem,
 } from "./db/groups";
+import type { GroupAccent } from "./group-accent";
 import {
   getProfileGames,
   getSteamLink,
@@ -152,6 +153,8 @@ export type LeaderboardGroupBoard = {
   id: string;
   name: string;
   starred: boolean;
+  description: string;
+  accent: GroupAccent;
   boards: LeaderboardBoards;
 };
 
@@ -303,6 +306,8 @@ export async function loadLeaderboard(
             id: group.id,
             name: group.name,
             starred: group.favorited,
+            description: group.description,
+            accent: group.accent,
             boards: boardsFromScored(groupScores),
           }
         : null,

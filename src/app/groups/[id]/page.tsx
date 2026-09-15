@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { resolveAppUrl } from "@/lib/app-url";
 import { getFriendshipStatuses } from "@/lib/db/friends";
 import {
+  canManageGroup,
   getGroupById,
   getLatestScoreDay,
   getMembership,
@@ -12,6 +13,7 @@ import {
   listScoresForDay,
   rankMembersForDay,
 } from "@/lib/db/groups";
+import { GROUP_ACCENTS } from "@/lib/group-accent";
 import {
   formatHeldDay,
   formatPlaytime,
@@ -32,11 +34,14 @@ import {
   acceptJoinAction,
   declineJoinAction,
   deleteGroupAction,
+  kickMemberAction,
   leaveGroupAction,
   rotateInviteAction,
+  setMemberRoleAction,
   toggleFavoriteAction,
 } from "../actions";
 import { CopyInviteLink } from "../copy-invite";
+import { GroupPresentationForm } from "../group-presentation-form";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +89,8 @@ export default async function GroupPage({
   }
 
   const isOwner = membership.role === "owner";
+  const canEdit = canManageGroup(membership.role);
+  const accent = GROUP_ACCENTS[group.accent];
   const today = dayStringInZone(new Date(), group.timeZone);
   const yesterday = addUtcDays(today, -1);
 
@@ -131,7 +138,13 @@ export default async function GroupPage({
         ← Back to groups
       </Link>
 
-      <PageIntro kicker="Lowest activity" title={group.name}>
+      <PageIntro
+        kicker="Lowest activity"
+        title={<span className={accent.title}>{group.name}</span>}
+      >
+        {group.description ? (
+          <p className="text-paper">{group.description}</p>
+        ) : null}
         Today is {formatHeldDay(today)} in {group.timeZone}. Lowest held
         minutes wins. Scores are calculated on {formatHeldDay(yesterday)} after the daily
         Steam pull at {group.timeZone}.
@@ -140,6 +153,17 @@ export default async function GroupPage({
         <input type="hidden" name="groupId" value={group.id} />
         <FavoriteStarButton favorited={membership.favorited} labeled />
       </form>
+
+      {canEdit ? (
+        <Card className="corners space-y-3 p-6">
+          <h2 className="text-sm text-paper">Group</h2>
+          <GroupPresentationForm
+            groupId={group.id}
+            description={group.description}
+            accent={group.accent}
+          />
+        </Card>
+      ) : null}
 
       {isOwner ? (
         <Card className="corners space-y-3 p-6">
@@ -317,7 +341,11 @@ export default async function GroupPage({
                   )}
                   <p className="text-xs text-muted">
                     @{member.profile.username}
-                    {member.role === "owner" ? " · owner" : ""}
+                    {member.role === "owner"
+                      ? " · owner"
+                      : member.role === "co_owner"
+                        ? " · co-owner"
+                        : ""}
                   </p>
                 </div>
                 <span className="text-xs text-signal">
@@ -347,6 +375,53 @@ export default async function GroupPage({
                     groupId={group.id}
                   />
                 )}
+                {isOwner && !isSelf && member.role !== "owner" ? (
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <form action={setMemberRoleAction}>
+                      <input type="hidden" name="groupId" value={group.id} />
+                      <input
+                        type="hidden"
+                        name="profileId"
+                        value={member.profile.id}
+                      />
+                      {member.role === "co_owner" ? (
+                        <>
+                          <input type="hidden" name="role" value="member" />
+                          <button
+                            type="submit"
+                            className="text-xs text-fern hover:text-signal"
+                          >
+                            Remove co-owner
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <input type="hidden" name="role" value="co_owner" />
+                          <button
+                            type="submit"
+                            className="text-xs text-fern hover:text-signal"
+                          >
+                            Make co-owner
+                          </button>
+                        </>
+                      )}
+                    </form>
+                    <form action={kickMemberAction}>
+                      <input type="hidden" name="groupId" value={group.id} />
+                      <input
+                        type="hidden"
+                        name="profileId"
+                        value={member.profile.id}
+                      />
+                      <button
+                        type="submit"
+                        className="text-xs text-muted hover:text-danger"
+                      >
+                        Kick
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
               </li>
             );
           })}
