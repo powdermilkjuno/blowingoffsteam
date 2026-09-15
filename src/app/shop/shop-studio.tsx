@@ -52,7 +52,8 @@ function missingLook(cart: ShopCart, ownedIds: string[]): ShopItem[] {
   if (cart.accent) ids.push(cart.accent);
   return ids
     .map((id) => getShopItem(id))
-    .filter((item): item is ShopItem => Boolean(item) && !isOwned(item, owned));
+    .filter((item): item is ShopItem => Boolean(item))
+    .filter((item) => !isOwned(item, owned));
 }
 
 function PeekSkeleton({
