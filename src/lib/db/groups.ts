@@ -79,6 +79,29 @@ function generateInviteToken(): string {
   return token;
 }
 
+export function parseInviteInput(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  let token = trimmed;
+  try {
+    const url = trimmed.includes("://")
+      ? new URL(trimmed)
+      : trimmed.startsWith("/")
+        ? new URL(trimmed, "http://local.invalid")
+        : null;
+    const match = url?.pathname.match(/\/groups\/join\/([^/]+)/i);
+    if (match?.[1]) token = match[1];
+  } catch {
+    // Use the raw paste as a token.
+  }
+
+  token = token.split(/[?#]/)[0].replace(/\/$/, "").replace(/[\s-]/g, "").toUpperCase();
+  if (token.length !== INVITE_TOKEN_LENGTH) return null;
+  if (![...token].every((ch) => INVITE_ALPHABET.includes(ch))) return null;
+  return token;
+}
+
 function asRole(raw: string): GroupRole {
   if (raw === "owner" || raw === "co_owner") return raw;
   return "member";
@@ -362,17 +385,27 @@ export async function requestJoin(
     return { ok: true, value: { group, status: "accepted" } };
   }
   if (existing?.status === "pending") {
-    return { ok: true, value: { group, status: "pending" } };
+    await getDb()
+      .update(groupMembers)
+      .set({ status: "accepted", respondedAt: new Date() })
+      .where(
+        and(
+          eq(groupMembers.groupId, group.id),
+          eq(groupMembers.profileId, profileId),
+        ),
+      );
+    return { ok: true, value: { group, status: "accepted" } };
   }
 
   await getDb().insert(groupMembers).values({
     groupId: group.id,
     profileId,
     role: "member",
-    status: "pending",
+    status: "accepted",
+    respondedAt: new Date(),
   });
 
-  return { ok: true, value: { group, status: "pending" } };
+  return { ok: true, value: { group, status: "accepted" } };
 }
 
 export async function acceptJoinRequest(

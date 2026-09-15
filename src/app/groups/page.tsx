@@ -10,6 +10,7 @@ import {
 import { formatHeldDay, formatPlaytime } from "@/lib/db/profiles";
 import { hoursFromMinutes } from "@/lib/hours";
 import { dayStringInZone } from "@/lib/playtime-windows";
+import { resolveAppUrl } from "@/lib/app-url";
 import { requireCompleteProfile } from "@/lib/require-profile";
 import AppShell from "@/components/AppShell";
 import Button from "@/components/Button";
@@ -22,7 +23,9 @@ import TopFiveChart from "@/components/TopFiveChart";
 import type { LeaderboardEntry } from "@/lib/dashboard-data";
 import { GROUP_ACCENTS } from "@/lib/group-accent";
 import { acceptJoinAction, declineJoinAction, toggleFavoriteAction } from "./actions";
+import { CopyInviteLink } from "./copy-invite";
 import { CreateGroupForm } from "./create-group-form";
+import { JoinGroupForm } from "./join-group-form";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +53,7 @@ async function loadGroupOverview(group: GroupListItem) {
 
 export default async function GroupsPage() {
   const profile = await requireCompleteProfile();
+  const origin = await resolveAppUrl();
 
   const [mine, pending] = await Promise.all([
     listGroupsForProfile(profile.id),
@@ -60,13 +64,14 @@ export default async function GroupsPage() {
   return (
     <AppShell active="groups" displayName={profile.displayName} walletPoints={profile.walletPoints} sitePack={profile.equippedSiteTheme}>
       <PageIntro kicker="Compete" title="Groups">
-        Live held minutes for today. Lowest time is winning right now.
+        Groups are invite-only. Enter a code, open a join link, or create a group and share yours.
       </PageIntro>
 
       {overviews.length === 0 ? (
         <Card className="corners space-y-3 p-6">
           <p className="text-sm text-muted">
-            No groups yet. Create one below or ask someone for their join link.
+            You are not in any groups yet. Join with a code below, or create one
+            and share the code.
           </p>
         </Card>
       ) : (
@@ -77,6 +82,12 @@ export default async function GroupsPage() {
             today={today}
             live={live}
             viewerId={profile.id}
+            inviteUrl={
+              group.role === "owner"
+                ? `${origin}/groups/join/${group.inviteToken}`
+                : undefined
+            }
+            inviteCode={group.role === "owner" ? group.inviteToken : undefined}
           />
         ))
       )}
@@ -134,10 +145,19 @@ export default async function GroupsPage() {
       ) : null}
 
       <Card className="corners space-y-3 p-6">
+        <h2 className="text-sm text-paper">Join a group</h2>
+        <p className="text-xs text-muted">
+          Enter the invite code, or paste the join link. You are added as soon
+          as it matches.
+        </p>
+        <JoinGroupForm />
+      </Card>
+
+      <Card className="corners space-y-3 p-6">
         <h2 className="text-sm text-paper">Create a group</h2>
         <p className="text-xs text-muted">
-          You get a join link. People request in; you accept. They do not need
-          to be friends to see today&apos;s minutes.
+          You get a code and a join link. Anyone with either can walk in. They
+          do not need to be friends to see today&apos;s minutes.
         </p>
         <CreateGroupForm />
       </Card>
@@ -150,11 +170,15 @@ function GroupOverviewCard({
   today,
   live,
   viewerId,
+  inviteUrl,
+  inviteCode,
 }: {
   group: GroupListItem;
   today: string;
   live: RankedMember[];
   viewerId: string;
+  inviteUrl?: string;
+  inviteCode?: string;
 }) {
   const accent = GROUP_ACCENTS[group.accent];
 
@@ -245,6 +269,13 @@ function GroupOverviewCard({
           );
         })}
       </div>
+
+      {inviteUrl && inviteCode ? (
+        <div className="mt-4 space-y-2 border-t border-line pt-3">
+          <p className="text-xs text-muted">Invite code and join link</p>
+          <CopyInviteLink url={inviteUrl} code={inviteCode} />
+        </div>
+      ) : null}
 
       <Link
         href={`/groups/${group.id}`}

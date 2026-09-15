@@ -44,12 +44,13 @@ export default function AvatarWithBio({
       alt=""
       width={size}
       height={size}
-      className={`shrink-0 rounded object-cover ${className}`}
+      draggable={false}
+      className={`pointer-events-none shrink-0 rounded object-cover ${className}`}
       style={box}
     />
   ) : (
     <span
-      className={`flex shrink-0 items-center justify-center rounded bg-moss/70 font-mono tracking-normal text-paper ${
+      className={`pointer-events-none flex shrink-0 items-center justify-center rounded bg-moss/70 font-mono tracking-normal text-paper ${
         size >= 48 ? "text-lg" : "text-[10px]"
       } ${className}`}
       style={box}

@@ -79,7 +79,7 @@ export default async function GroupPage({
         <Card tone="plain" className={`corners space-y-3 p-6 ${GROUP_ACCENTS[group.accent].card}`}>
           <h1 className="text-sm text-paper">You are not in {group.name}</h1>
           <p className="text-sm text-muted">
-            Ask the owner for the join link, or wait if you already requested.
+            Ask the owner for the invite code or join link.
           </p>
           <Button href="/groups" variant="primary">
             Back to groups
@@ -184,8 +184,8 @@ export default async function GroupPage({
 
       {isOwner ? (
         <Card tone="plain" className={`corners space-y-3 p-6 ${accent.card}`}>
-          <h2 className="text-sm text-paper">Join link</h2>
-          <CopyInviteLink url={inviteUrl} />
+          <h2 className="text-sm text-paper">Invite</h2>
+          <CopyInviteLink url={inviteUrl} code={group.inviteToken} />
           <form action={rotateInviteAction}>
             <input type="hidden" name="groupId" value={group.id} />
             <button type="submit" className="text-xs text-fern hover:text-signal">

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getEmailForAuthUser } from "@/lib/db/auth-users";
 import { getProfileBySteamId } from "@/lib/db/profiles";
 import { getSteamTicket } from "@/lib/steam-ticket";
+import { safeAppPath } from "@/lib/app-url";
 import { auth } from "@/lib/auth/server";
 import { AuthShell } from "../auth/_components/auth-shell";
 import {
@@ -25,9 +26,9 @@ export default async function LoginPage({
   searchParams,
 }: PageProps<"/login">) {
   const { data: session } = await auth.getSession();
-  if (session?.user) redirect("/dashboard");
-
   const params = await searchParams;
+  const next = safeAppPath(params.next) ?? "/dashboard";
+  if (session?.user) redirect(next);
   const errorKey = typeof params.error === "string" ? params.error : "";
   const initialError = ERRORS[errorKey];
   const reset = params.reset === "1";
@@ -66,10 +67,11 @@ export default async function LoginPage({
           initialError={initialError}
           defaultEmail={returningEmail ?? ""}
           lockEmail
+          next={next}
         />
 
         <AuthDivider />
-        <GoogleButton label="Continue with Google" />
+        <GoogleButton label="Continue with Google" callbackURL={next} />
 
         <p className="text-center text-sm text-muted">
           <Link
@@ -96,8 +98,8 @@ export default async function LoginPage({
 
       <SteamButton />
       <AuthDivider label="or email" />
-      <SignInForm initialError={initialError} />
-      <GoogleButton label="Continue with Google" />
+      <SignInForm initialError={initialError} next={next} />
+      <GoogleButton label="Continue with Google" callbackURL={next} />
 
       <p className="text-center text-xs text-muted">
         <Link

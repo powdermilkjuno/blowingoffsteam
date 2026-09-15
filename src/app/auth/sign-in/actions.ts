@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
+import { safeAppPath } from "@/lib/app-url";
 import {
   clearedTicketCookieOptions,
   STEAM_TICKET_COOKIE,
@@ -29,5 +30,5 @@ export async function signInAction(
   const store = await cookies();
   store.set(STEAM_TICKET_COOKIE, "", clearedTicketCookieOptions());
 
-  redirect("/dashboard");
+  redirect(safeAppPath(formData.get("next")) ?? "/dashboard");
 }
